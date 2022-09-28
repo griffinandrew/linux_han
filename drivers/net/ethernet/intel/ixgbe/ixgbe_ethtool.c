@@ -2429,7 +2429,8 @@ static int ixgbe_set_coalesce(struct net_device *netdev,
 	  */
 	  // clean up
 	  //for(i=0; i<16; i++) {
-	  memset(ixgbe_logs[core].log, 0, (sizeof(union IxgbeLogEntry) * IXGBE_LOG_SIZE));
+	  //memset(ixgbe_logs[core].log, 0, (sizeof(union IxgbeLogEntry) * IXGBE_LOG_SIZE));
+	  memset(ixgbe_logs[core].itr_log, 0, (sizeof(union IxgbeLogEntry) * IXGBE_LOG_SIZE));
 	  ixgbe_logs[core].itr_joules_last_tsc = 0;
 	  ixgbe_logs[core].msix_other_cnt = 0;
 	  ixgbe_logs[core].itr_cookie = 0;

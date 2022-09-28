@@ -433,10 +433,11 @@ struct ixgbe_ring_container {
 	u8 itr;				/* current ITR setting for ring */
 
   // new params
-  u32 per_itr_desc;
-  u32 per_itr_packets;
-  u32 per_itr_bytes;
-  u32 per_itr_free_budget;
+  //u32 desc_counts;
+  //u32 per_itr_packets;
+  //u32 byte_counts;
+  //u32 tso_desc_counts[40];
+  //u32 per_itr_free_budget;
 };
 
 /* iterator for handling rings in ring container */
@@ -569,6 +570,7 @@ union IxgbeLogEntry {
   } __attribute((packed)) Fields;
 } __attribute((packed));
 
+
 /*union IxgbeLogEntry {
   long long data[3];
   struct {
@@ -583,14 +585,15 @@ union IxgbeLogEntry {
 
 #define IXGBE_CACHE_LINE_SIZE 64
 //#define IXGBE_LOG_SIZE 200
-#define IXGBE_LOG_SIZE 1000000
+#define IXGBE_LOG_SIZE 10000000
 //#define IXGBE_LOG_SIZE 20
 //#define IXGBE_LOG_SIZE 200000
 
 struct IxgbeLog {
   //union IxgbeLogEntry log[IXGBE_LOG_SIZE];
-  union IxgbeLogEntry *log;
+  //union IxgbeLogEntry *log;
   //char padding[IXGBE_CACHE_LINE_SIZE- sizeof(union LogEntry *)];
+  u32 *itr_log;
   
   u64 itr_joules_last_tsc;  
   u32 msix_other_cnt;
@@ -599,7 +602,13 @@ struct IxgbeLog {
   u32 itr_cnt;
   u32 perf_started;
     
-  //union LogEntry *cur;  
+  //union LogEntry *cur;
+  u32 *tso_desc_counts;
+  u32 rx_desc;
+  u32 tx_desc;
+  u32 rx_bytes;
+  u32 tx_bytes;
+  
 } __attribute__((packed, aligned(IXGBE_CACHE_LINE_SIZE)));
 
 extern unsigned int ixgbe_tsc_per_milli;
