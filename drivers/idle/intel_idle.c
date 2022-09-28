@@ -921,7 +921,9 @@ static __cpuidle int intel_idle(struct cpuidle_device *dev,
 		}
 	}
 
-	// same as EbbRT now
+	/*************************************************************************
+	 * intLog: index maps to a specific C-state, increment its counter
+	 *************************************************************************/
 	dev->intel_idle_states_usage[index] += 1;
 	
 	mwait_idle_with_hints(eax, ecx);

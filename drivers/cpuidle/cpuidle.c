@@ -555,6 +555,9 @@ static void __cpuidle_unregister_device(struct cpuidle_device *dev)
 static void __cpuidle_device_init(struct cpuidle_device *dev)
 {
         memset(dev->states_usage, 0, sizeof(dev->states_usage));
+	/*******************
+	 * intLog: clear intel_idle_states_usage
+	 *******************/
         memset(dev->intel_idle_states_usage, 0, sizeof(dev->intel_idle_states_usage));
 	dev->last_residency_ns = 0;
 	dev->next_hrtimer = 0;

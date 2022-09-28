@@ -2329,11 +2329,9 @@ static int ixgbe_set_coalesce(struct net_device *netdev,
 {
 	struct ixgbe_adapter *adapter = netdev_priv(netdev);
 	struct ixgbe_q_vector *q_vector;
-	int i, core;
+	int i;
 	u16 tx_itr_param, rx_itr_param, tx_itr_prev;
 	bool need_reset = false;
-	struct IxgbeLog *il;
-	//union IxgbeLogEntry *ile;
 	  
 	if (adapter->q_vector[0]->tx.count && adapter->q_vector[0]->rx.count) {
 		/* reject Tx specific changes in case of mixed RxTx vectors */
@@ -2396,48 +2394,6 @@ static int ixgbe_set_coalesce(struct net_device *netdev,
 			/* rx only or mixed */
 			q_vector->itr = rx_itr_param;
 		ixgbe_write_eitr(q_vector);
-	}
-
-	if (ec->rx_max_coalesced_frames_low) {
-	  core = ec->rx_max_coalesced_frames_low - 1;
-	  
-	  if (core >= adapter->num_q_vectors || core > 15) {
-	    printk(KERN_INFO "\t core %d error >= num_q_vectors=%u\n", core, adapter->num_q_vectors);
-	  }
-
-	  il= &ixgbe_logs[core];
-	  
-	  printk(KERN_INFO "Core=%d itr_cnt=%u\n", core, il->itr_cnt);
-	  /*printk(KERN_INFO "i rxdesc rxbytes txdesc txbytes ins cyc refcyc llcm C3 C6 C7 JOULE TSC\n");
-	  for (i = 0; i < il->itr_cnt; i++) {
-	    ile = &il->log[i];
-	    
-	    printk(KERN_INFO "%u %u %u %u %u %llu %llu %llu %llu %llu %llu %llu %llu %llu\n",
-		   i,
-		   ile->Fields.rx_desc, ile->Fields.rx_bytes,
-		   ile->Fields.tx_desc, ile->Fields.tx_bytes,
-		   ile->Fields.ninstructions,
-		   ile->Fields.ncycles,
-		   ile->Fields.nref_cycles,
-		   ile->Fields.nllc_miss,		   		   
-		   ile->Fields.c3,
-		   ile->Fields.c6,
-		   ile->Fields.c7,
-		   ile->Fields.joules,
-		   ile->Fields.tsc);
-	  }
-	  */
-	  // clean up
-	  //for(i=0; i<16; i++) {
-	  memset(ixgbe_logs[core].log, 0, (sizeof(union IxgbeLogEntry) * IXGBE_LOG_SIZE));
-	  ixgbe_logs[core].itr_joules_last_tsc = 0;
-	  ixgbe_logs[core].msix_other_cnt = 0;
-	  ixgbe_logs[core].itr_cookie = 0;
-	  ixgbe_logs[core].non_itr_cnt = 0;
-	  ixgbe_logs[core].itr_cnt = 0;
-	  ixgbe_logs[core].perf_started = 0;
-	  //}
-	    //memset(ixgbe_logs, 0, sizeof(ixgbe_logs));
 	}
 	
 	  /*

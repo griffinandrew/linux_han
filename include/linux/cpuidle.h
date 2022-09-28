@@ -93,6 +93,9 @@ struct cpuidle_device {
 	u64			last_residency_ns;
 	u64			poll_limit_ns;
 	u64			forced_idle_latency_limit_ns;
+  	/*************************************************************************
+	 * intLog: create new array to store Intel C-state information
+	 *************************************************************************/
         long long intel_idle_states_usage[CPUIDLE_STATE_MAX];
         
         struct cpuidle_state_usage	states_usage[CPUIDLE_STATE_MAX];
