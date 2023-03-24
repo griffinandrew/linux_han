@@ -50,6 +50,8 @@
 
 #include "mlx4_en.h"
 
+#include "intlog.h"
+
 static int mlx4_alloc_page(struct mlx4_en_priv *priv,
 			   struct mlx4_en_rx_alloc *frag,
 			   gfp_t gfp)
@@ -927,6 +929,7 @@ void mlx4_en_rx_irq(struct mlx4_cq *mcq)
 	struct mlx4_en_priv *priv = netdev_priv(cq->dev);
 
 	if (likely(priv->port_up))
+	        record_log(cq);
 		napi_schedule_irqoff(&cq->napi);
 	else
 		mlx4_en_arm_cq(priv, cq);
