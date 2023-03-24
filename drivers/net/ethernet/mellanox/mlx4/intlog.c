@@ -234,8 +234,14 @@ static inline uint64_t get_instr_count(void){
 }
 
 
-
-
+static inline uint64_t get_energy_status(void){
+	unint64_t val;
+	uint64_t reg = 0x611;
+	asm volatile("msr pmu, %1; mrs %0, pmccntr_el0"
+		     : "=r" (val)
+		     : "r" (reg));
+	return val;
+}
 /*************************************************************************************************/
 /********************************** GETTER TO EXTARCT CORE # *************************************/
 /*************************************************************************************************/
@@ -378,7 +384,8 @@ static void dealloc_log_space(struct net_device *dev)
 
      if ( (now - last) > tsc_per_mill){
 	     //first get the joules
-	     
+	     	uint64_t energy = get_energy_status();
+		write_nti64_arm(&ile->Fields.joules, energy); 
 	     //store current rdtsc
 		il->itr->joules_last_tsc = now;
 
@@ -387,8 +394,10 @@ static void dealloc_log_space(struct net_device *dev)
      		if(il->perf_started) {
 		  uint64_t num_miss = get_llcm_arm(); //this para is defined in header
 		  write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
+		  
 		  uint64_t num_cycs = get_instr_count_arm();
 		  write_nti64_arm(&ile->Fields.ninstructions, num_cycs);
+		  
 		  uint64_t num_ref_cycs = get_refcyc_arm();
 		  write_nti64_arm(&ile->Fields.ncycles, num_ref_cycles);
 
@@ -406,6 +415,8 @@ static void dealloc_log_space(struct net_device *dev)
 		  write_nti64_arm(&ile->Fields.c3, c3);
 
 		  
+
+
 		  //log hardware stats here
 		  // like c stats, cycles, LLCM, instructions
 			
@@ -414,7 +425,7 @@ static void dealloc_log_space(struct net_device *dev)
 		if (il->perf_started == 0) {
 		  //initilaze performance counters
      }
-   }
+   
  }
   
 	  
