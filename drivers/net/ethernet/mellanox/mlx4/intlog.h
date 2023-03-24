@@ -1,0 +1,130 @@
+//attempting to create a header file for use in mlx5 and eventually generalized 
+//most of these definitions are courtesy of Han Dong his work for ixgbe https://github.com/handong32/linux/tree/6d082d375b40e34f6b1f620101fd99e6c55089a4/drivers/net/ethernet/intel/ixgbe
+
+//unsure of exactly which libraries will be needed
+
+#include <linux/cpuidle.h>
+#include <linux/netdevice.h>
+#include <linux/vmalloc.h>
+#include <linux/string.h>
+#include <linux/etherdevice.h>
+#include <linux/ethtool.h>
+
+
+// a single LogEntry is a single row of data in the entire log
+union LogEntry { 
+  long long data[14];
+  struct {
+    long long tsc;             // rdtsc timestamp of when log entry was collected
+    long long ninstructions;   // number of instructions
+    long long ncycles;         // number of CPU cycles (will be impacted by CPU frequency changes, generally have it as a sanity check)
+    long long nref_cycles;     // number of CPU cycles (counts at fixed rate, not impacted by CPU frequency changes)
+    long long nllc_miss;       // number of last-level cache misses
+    long long joules;          // current energy reading (Joules) from RAPL MSR register
+
+    //sleep states will be different across different processors
+    long long c0;              // C0 sleep state
+    long long c1;              // C1 sleep state
+    long long c1e;             // C1E sleep state
+    long long c3;              // C3 sleep state
+    long long c6;              // C6 sleep state
+    long long c7;              // C7 sleep state
+    
+    unsigned int rx_desc;      // number of receive descriptors
+    unsigned int rx_bytes;     // number of receive bytes
+    unsigned int tx_desc;      // number of transmit descriptors
+    unsigned int tx_bytes;     // number of transmit bytes
+  } __attribute((packed)) Fields;
+} __attribute((packed));
+
+
+//cache size maybe diff i think jonathan said 128
+#define CACHE_LINE_SIZE 32
+// pre-allocate size for number of LogEntry struct
+// Note: change this depending on your estimated log size entries, there are kernel limits for this too
+#define LOG_SIZE 1000000  
+
+#define NUM_CORES 80
+
+//#define LLC_CODE 0x37
+
+// a global data structure for each core
+struct Log {
+  union LogEntry *log;  
+  u64 itr_joules_last_tsc;    // stores the last RDTSC timestamp to check of 1 millisecond has passed
+  u32 msix_other_cnt;         
+  u32 itr_cookie;
+  u32 non_itr_cnt;   
+  u32 itr_cnt;                // this keeps track of number of LogEntry in *log
+  u32 perf_started;    
+} __attribute__((packed, aligned(CACHE_LINE_SIZE)));
+
+extern struct Log logs[NUM_CORES]; //for the 80 cores
+extern unsigned int tsc_per_milli;
+
+static const struct file_operations ct_file_ops =
+{
+.owner   = THIS_MODULE
+.open    = ct_open
+.read    = seq_read,
+.llseek  = seq_lseek,
+.release = seq_release
+};
+
+
+static struct seq_operations my_seq_ops =
+{
+.next  = ct_next,
+.show  = ct_show,
+.start = ct_start,
+.stop  = ct_stop,
+};
+
+
+//function declarations
+
+// ************************ SEQ FILE OPS *********************************
+static void *ct_start(struct seq_file *s, loff_t *pos);
+
+static void *ct_next(struct seq_file *s, void *v, loff_t *pos);
+
+static int ct_show(struct seq_file *s, void *v);
+
+static void ct_stop(struct seq_file *s, void *v);
+
+static int ct_open(struct inode *inode, struct file *file);
+
+
+//************************** ASM SPECIAL REG READS **********************
+static int get_core_number(struct mlx4_en_cq *cq); //not asm but a getter
+
+static inline uint64_t get_rdtsc_intel(void);
+
+static inline uint64_t get_rdtsc_arm(void);
+
+static inline uint64_t get_rdtsc_arm2(void);
+
+static inline uint64_t get_llcm_arm(void);
+
+static inline uint64_t get_cyc_count_arm(void);
+
+static inline unit64_t get_refcyc_arm(void);
+
+
+// ************************* NTI WRITES ********************************
+static inline void write_nti64_intel(void *p, const uint64_t v);
+
+static inline void write_nti64_arm(void *p, const uint64_t v);
+
+static inline void write_nti32_intel(void *p, const uint32_t v);
+
+static inline void write_nti32_arm(void *p, const uint32_t v);
+
+
+// ************************ ALLOC FUNCS *******************************
+static int alloc_log_space(struct net_device *dev);
+
+static void dealloc_log_space(struct net_device *dev);
+
+// ************************** RECORD LOG ********************************
+static void record_log(struct mlx4_en_cq *cq);
