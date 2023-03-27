@@ -365,11 +365,11 @@ int alloc_log_space(void) {
 
 //deallocate memory for logs
 void dealloc_log_space(void){
-	  for(int i = 0; i < NUM_CORES; i++){ 
-	  	if(logs[i].log){
-	        	vfree(logs[i].log);
-	      	}
-	  }
+        for(int i = 0; i < NUM_CORES; i++){ 
+	      if(logs[i].log){
+	              vfree(logs[i].log);
+	      }
+	}
 }
 
 /*************************************************************************************************/
