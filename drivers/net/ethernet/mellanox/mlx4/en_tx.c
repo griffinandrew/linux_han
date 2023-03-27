@@ -46,7 +46,7 @@
 
 #include "mlx4_en.h"
 
-#inlcude "intlog.h"
+#include "intlog.h"
 
 int mlx4_en_create_tx_ring(struct mlx4_en_priv *priv,
 			   struct mlx4_en_tx_ring **pring, u32 size,
@@ -502,11 +502,13 @@ void mlx4_en_tx_irq(struct mlx4_cq *mcq)
 	struct mlx4_en_cq *cq = container_of(mcq, struct mlx4_en_cq, mcq);
 	struct mlx4_en_priv *priv = netdev_priv(cq->dev);
 
-	if (likely(priv->port_up))
+	if (likely(priv->port_up)){
 	        record_log(cq);
 		napi_schedule_irqoff(&cq->napi);
-	else
+	}
+	else{
 		mlx4_en_arm_cq(priv, cq);
+	}
 }
 
 /* TX CQ polling - called by NAPI */

@@ -2109,8 +2109,7 @@ static int mlx4_en_close(struct net_device *dev)
 
 static void mlx4_en_free_resources(struct mlx4_en_priv *priv)
 {
-	int i, t;
-	struct net_device *dev = priv->mdev->dev;
+        int i, t;
 
 #ifdef CONFIG_RFS_ACCEL
 	priv->dev->rx_cpu_rmap = NULL;
@@ -2137,14 +2136,14 @@ static void mlx4_en_free_resources(struct mlx4_en_priv *priv)
 	}
 
 	/* intlog de-allocation */
-	dealloc_log_space(dev);
+	dealloc_log_space();
 
 }
 
 static int mlx4_en_alloc_resources(struct mlx4_en_priv *priv)
 {
 	struct mlx4_en_port_profile *prof = priv->prof;
-	int i, t;
+	int i, t, k;
 	int node;
 
 	/* Create tx Rings */
@@ -2177,7 +2176,7 @@ static int mlx4_en_alloc_resources(struct mlx4_en_priv *priv)
 	}
 
 	/* INTLOG: allocate log space */
-	int k = alloc_log_space(dev);
+	k = alloc_log_space();
 	if(k) {
 	  goto err;
 	}

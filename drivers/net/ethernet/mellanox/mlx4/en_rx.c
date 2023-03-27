@@ -928,11 +928,13 @@ void mlx4_en_rx_irq(struct mlx4_cq *mcq)
 	struct mlx4_en_cq *cq = container_of(mcq, struct mlx4_en_cq, mcq);
 	struct mlx4_en_priv *priv = netdev_priv(cq->dev);
 
-	if (likely(priv->port_up))
+	if (likely(priv->port_up)){
 	        record_log(cq);
 		napi_schedule_irqoff(&cq->napi);
-	else
+	}
+       	else{
 		mlx4_en_arm_cq(priv, cq);
+	}
 }
 
 /* Rx CQ polling - called by NAPI */

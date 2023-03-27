@@ -61,6 +61,10 @@ struct Log {
 extern struct Log logs[NUM_CORES]; //for the 80 cores
 extern unsigned int tsc_per_milli;
 
+extern const struct file_operations ct_file_ops;
+extern struct seq_operations my_seq_ops; //both declared in c file
+
+/* //this should be in c file
 static const struct file_operations ct_file_ops =
 {
 .owner   = THIS_MODULE
@@ -79,51 +83,52 @@ static struct seq_operations my_seq_ops =
 .stop  = ct_stop,
 };
 
+*/
 
 //function declarations
 
 // ************************ SEQ FILE OPS *********************************
-static void *ct_start(struct seq_file *s, loff_t *pos);
+void *ct_start(struct seq_file *s, loff_t *pos);
 
-static void *ct_next(struct seq_file *s, void *v, loff_t *pos);
+void *ct_next(struct seq_file *s, void *v, loff_t *pos);
 
-static int ct_show(struct seq_file *s, void *v);
+int ct_show(struct seq_file *s, void *v);
 
-static void ct_stop(struct seq_file *s, void *v);
+void ct_stop(struct seq_file *s, void *v);
 
-static int ct_open(struct inode *inode, struct file *file);
+int ct_open(struct inode *inode, struct file *file);
 
 
 //************************** ASM SPECIAL REG READS **********************
-static int get_core_number(struct mlx4_en_cq *cq); //not asm but a getter
+int get_core_number(struct mlx4_en_cq *cq); //not asm but a getter
 
-static inline uint64_t get_rdtsc_intel(void);
+inline uint64_t get_rdtsc_intel(void);
 
-static inline uint64_t get_rdtsc_arm(void);
+inline uint64_t get_rdtsc_arm(void);
 
-static inline uint64_t get_rdtsc_arm2(void);
+inline uint64_t get_rdtsc_arm2(void);
 
-static inline uint64_t get_llcm_arm(void);
+inline uint64_t get_llcm_arm(void);
 
-static inline uint64_t get_cyc_count_arm(void);
+inline uint64_t get_cyc_count_arm(void);
 
-static inline unit64_t get_refcyc_arm(void);
+inline uint64_t get_refcyc_arm(void);
 
 
 // ************************* NTI WRITES ********************************
-static inline void write_nti64_intel(void *p, const uint64_t v);
+inline void write_nti64_intel(void *p, const uint64_t v);
 
-static inline void write_nti64_arm(void *p, const uint64_t v);
+inline void write_nti64_arm(void *p, const uint64_t v);
 
-static inline void write_nti32_intel(void *p, const uint32_t v);
+inline void write_nti32_intel(void *p, const uint32_t v);
 
-static inline void write_nti32_arm(void *p, const uint32_t v);
+inline void write_nti32_arm(void *p, const uint32_t v);
 
 
 // ************************ ALLOC FUNCS *******************************
-static int alloc_log_space(struct net_device *dev);
+int alloc_log_space(void);
 
-static void dealloc_log_space(struct net_device *dev);
+void dealloc_log_space(void);
 
 // ************************** RECORD LOG ********************************
-static void record_log(struct mlx4_en_cq *cq);
+void record_log(struct mlx4_en_cq *cq);

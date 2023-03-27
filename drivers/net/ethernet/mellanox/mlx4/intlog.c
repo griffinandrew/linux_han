@@ -155,15 +155,26 @@ static int ct_open(struct inode *inode, struct file *file)
   return ret; 
 }
 
-/*static const struct file_operations ct_file_ops =
+/*************************************************************************************************/
+/*************************** defining structs for reaping data ***********************************/
+/*************************************************************************************************/
+
+static const struct file_operations ct_file_ops =
 {
- .owner   = THIS_MODULE,
- .open    = ct_open,
- .read    = seq_read,
- .llseek  = seq_lseek,
- .release = seq_release
+.owner   = THIS_MODULE
+.open    = ct_open
+.read    = seq_read,
+.llseek  = seq_lseek,
+.release = seq_release
 };
-*/ // in the header 
+
+static struct seq_operations my_seq_ops =
+{
+.next  = ct_next,
+.show  = ct_show,
+.start = ct_start,
+.stop  = ct_stop,
+};
 
 /*************************************************************************************************/
 /********************************** arch specific asm getters ************************************/
@@ -309,7 +320,7 @@ static inline uint32_t get_instruction_count(void)
 
 
 // allocates memory for creation of log 
-static int alloc_log_space(struct net_device *dev) {
+static int alloc_log_space(void) {
   int flag = 0;
 	printk(KERN_INFO "****************** intLog init *******************"
 	for(int i = 0; i < NUM_CORES; i++) 
@@ -338,7 +349,7 @@ static int alloc_log_space(struct net_device *dev) {
 
 
 //deallocate memory for logs
-static void dealloc_log_space(struct net_device *dev){
+static void dealloc_log_space(void){
 	  for (int i = 0; i < NUM_CORES; i++){ 
 	  	if(logs[i].log){
 	        	vfree(logs[i].log);
