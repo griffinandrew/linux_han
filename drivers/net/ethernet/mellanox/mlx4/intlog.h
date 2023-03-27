@@ -61,8 +61,14 @@ struct Log {
 extern struct Log logs[NUM_CORES]; //for the 80 cores
 extern unsigned int tsc_per_milli;
 
-extern const struct file_operations ct_file_ops;
-extern struct seq_operations my_seq_ops; //both declared in c file
+extern const struct file_operations ct_file_ops_intlog;
+extern struct seq_operations my_seq_ops_intlog; //both declared in c file
+
+
+// not sure if this is needed
+struct mlx4_en_cq *cq;
+
+
 
 /* //this should be in c file
 static const struct file_operations ct_file_ops =
@@ -100,20 +106,21 @@ int ct_open(struct inode *inode, struct file *file);
 
 
 //************************** ASM SPECIAL REG READS **********************
-int get_core_number(struct mlx4_en_cq *cq); //not asm but a getter
+u32 get_core_number(struct mlx4_en_cq *cq); //not asm but a getter
 
-inline uint64_t get_rdtsc_intel(void);
+//inline uint64_t get_rdtsc_intel(void);
 
 inline uint64_t get_rdtsc_arm(void);
 
 inline uint64_t get_rdtsc_arm2(void);
 
-inline uint64_t get_llcm_arm(void);
+//inline uint64_t get_llcm_arm(void);
 
 inline uint64_t get_cyc_count_arm(void);
 
 inline uint64_t get_refcyc_arm(void);
 
+inline uint64_t get_instr_count_arm(void);
 
 // ************************* NTI WRITES ********************************
 inline void write_nti64_intel(void *p, const uint64_t v);
