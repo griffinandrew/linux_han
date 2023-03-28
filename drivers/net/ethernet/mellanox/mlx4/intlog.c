@@ -137,15 +137,6 @@ void ct_stop(struct seq_file *s, void *v)
   kfree(v);  
 }
 
-/*static struct seq_operations my_seq_ops =
-{
- .next  = ct_next,
- .show  = ct_show,
- .start = ct_start,
- .stop  = ct_stop,
-};
-*/ //currently in the header file 
-
 int ct_open(struct inode *inode, struct file *file)
 {
   int ret;
@@ -201,7 +192,7 @@ inline uint64_t get_rdtsc_intel(void){
 
 
 //possibly arm implementation for retreiving tsc
-inline uint64_t get_rdtsc_arm(void){
+static inline uint64_t get_rdtsc_arm(void){
 	uint64_t tsc;
 	asm volatile("mrs %0, cntvct_el0" : "=r" (tsc));
   	return tsc;
@@ -209,7 +200,7 @@ inline uint64_t get_rdtsc_arm(void){
 
 
 //other possible implementaion to get timestamp
-inline uint64_t get_rdtsc_arm_2(void) {
+static inline uint64_t get_rdtsc_arm_2(void) {
 	uint64_t tsc;
  	asm volatile("mrs %[tsc], cntvct_el0\n"
 	       	     :[tsc] "=r" (tsc)
@@ -230,34 +221,35 @@ inline uint64_t get_llcm_arm(void){
 */
 
 //gets the current instruction count
-inline uint64_t get_cyc_count_arm(void){
-	uint64_t val;
+static inline long long get_cyc_count_arm(void){
+	long long val;
 	asm volatile("msr %0, PMCCNTR_EL0"
 		     : "=r" (val));
   	return val;
 }
 
+/*
 //gets the number of ref cycles 
-inline uint64_t get_refcyc_arm(void){
-  	uint64_t val;
+static inline long long get_refcyc_arm(void){
+  	long long val;
   	asm volatile("msr %0, CNTPCT_EL0"
 	             : "=r" (val));
   	return val;
 }
 
-
+*/
 //should return the current instruction count, need to verify this is correct one  
-inline uint64_t get_instr_count_arm(void){
-	uint64_t val;
+static inline long long get_instr_count_arm(void){
+	long long val;
   	asm volatile("mrs %0, PMEVCNTR0_EL0" : "=r"(val));
   	return val;
 }
 
 
-inline uint64_t get_energy_status(void){
-	uint64_t val;
-	uint64_t reg = 0x611;
-	asm volatile("msr pmu, %1; mrs %0, pmccntr_el0"
+static inline long long get_energy_status(void){
+	long long val;
+	long long reg = 0x611;
+	asm volatile("msr pmcr_el0, %1; mrs %0, pmccntr_el0"
 		     : "=r" (val)
 		     : "r" (reg));
 	return val;
@@ -287,23 +279,51 @@ u32 get_core_number(struct mlx4_en_cq *cq)
 /*************************************************************************************************/ 
 
 //p is pointer to mem location to written, v value to overwrite mem location
-inline void write_nti64_intel(void *p, const uint64_t v) {
+static inline void write_nti64_intel(void *p, const uint64_t v) {
 	asm volatile("movnti %0, (%1)\n\t"
 		     : 
 		     : "r"(v), "r"(p)
 		     : "memory");
 }
 
-
+/*
 //attempt at re-writing in arm assembly
-inline void write_nti64_arm(void *p, const uint64_t v) {
+static inline void write_nti64_arm(void *p, const uint64_t v) {
 	asm volatile("stnp %x[v], %x[p], #0\n"
 	             :[p] "+r" (p)
 	             :[v] "r" (v)
 	             : "memory");
 }
+*/
 
-inline void write_nti32_intel(void *p, const uint32_t v) {
+static inline void write_nti64_arm_test(void *p, const uint64_t v) {
+    asm volatile("stp %x[v], %x[p]\n"
+                 : [p] "+r" (p)
+                 : [v] "r" (v)
+                 : "memory");
+}
+
+static inline void store_int64_asm(void *p, const uint64_t v) {
+    asm volatile(
+        "ldr x0, %x[p]\n"
+        "stp %x[v], x0, [%x[p]]\n"
+        : [p] "+r" (p)
+        : [v] "r" (v)
+        : "memory", "x0"
+    );
+}
+
+
+static inline void store_int32_asm(void *p, const uint32_t v) {
+    asm volatile(
+        "str %w[v], [%x[p]]"
+        : [p] "+r" (p)
+        : [v] "r" (v)
+        : "memory"
+    );
+}
+
+static inline void write_nti32_intel(void *p, const uint32_t v) {
 	asm volatile("movnti %0, (%1)\n\t"
 		     :
 		     : "r"(v), "r"(p)
@@ -311,12 +331,21 @@ inline void write_nti32_intel(void *p, const uint32_t v) {
 }
 
 //arm assembly implementaion
-inline void write_nti32_arm(void *p, const uint32_t v) {
+static inline void write_nti32_arm(void *p, const uint32_t v) {
 	asm volatile("stnp %w[v], %x[p], #0\n"
 	             :[p] "+r" (p)
 	             :[v] "r" (v)
 	             : "memory");
 }
+
+static inline void write_nti32_arm_test(void *p, const uint32_t v) {
+    asm volatile("stlr %w[v], %x[p]\n"
+                 : [p] "+r" (p)
+                 : [v] "r" (v)
+                 : "memory");
+}
+
+
 
 /*
 static inline uint32_t get_instruction_count(void)
@@ -357,7 +386,7 @@ int alloc_log_space(void) {
 	}
 	tsc_per_milli = tsc_khz;
 	now = get_rdtsc_arm();
-	write_nti64_arm(&(logs[0].log[0].Fields.tsc), now);
+	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);
 	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
 	return flag;
 }
@@ -384,7 +413,9 @@ void record_log(struct mlx4_en_cq *cq)
    	uint64_t now = 0, last = 0;
    	int icnt = 0;
 	long long c0;
-	long long num_cycs, num_ref_cycs, energy;
+	long long num_cycs;
+       //	long long num_ref_cycs;
+       	long long energy;
 	
    	struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
    	int core_n = get_core_number(cq);
@@ -395,10 +426,15 @@ void record_log(struct mlx4_en_cq *cq)
    	if(icnt < LOG_SIZE) 
 	{
      		ile = &il->log[icnt];
-     		now = get_rdtsc_arm2();
-     		write_nti64_arm(&ile->Fields.tsc, now);
-     		write_nti32_arm(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
-     		write_nti32_arm(&(ile->Fields.rx_bytes), priv->pf_stats.rx_bytes);
+     		now = get_rdtsc_arm_2();
+
+		store_int64_asm(&(ile->Fields.tsc), now);
+		store_int32_asm(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
+		store_int32_asm(&(ile->Fields.rx_bytes), priv->pf_stats.rx_bytes);
+
+     		//write_nti64_arm_test(&(ile->Fields.tsc), now);
+     		//write_nti32_arm_test(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
+     		//write_nti32_arm_test(&(ile->Fields.rx_bytes), priv->pf_stats.rx_bytes);
 
      		//get last rdtsc
      		last = il->itr_joules_last_tsc;
@@ -409,18 +445,22 @@ void record_log(struct mlx4_en_cq *cq)
 		        il->itr_joules_last_tsc = now;
 	     		//first get the joules
 	     		energy = get_energy_status();
-			write_nti64_arm(&ile->Fields.joules, energy); 
+
+			store_int64_asm(&(ile->Fields.joules), energy);
+			//write_nti64_arm_test(&(ile->Fields.joules), energy); 
 	     	       
      			if(il->perf_started) 
 			{
 			  //num_miss = get_llcm_arm(); //this para is defined in header
 			  //write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
+		 		
+				num_cycs = get_instr_count_arm();
+		  		store_int64_asm(&(ile->Fields.ninstructions), num_cycs);
+				//write_nti64_arm_test(&(ile->Fields.ninstructions), num_cycs);
 		  
-		 		num_cycs = get_instr_count_arm();
-		  		write_nti64_arm(&ile->Fields.ninstructions, num_cycs);
-		  
-		  		num_ref_cycs = get_refcyc_arm();
-		  		write_nti64_arm(&ile->Fields.ncycles, num_ref_cycs);
+			//	num_ref_cycs = get_refcyc_arm();
+			//	store_int64_asm(&(ile->Fields.ncycles), num_ref_cycs);
+		  		//write_nti64_arm_test(&(ile->Fields.ncycles), num_ref_cycs);
 
 		  		//need to include all the sleep states
 		  		//not sure why he created his own array within the idle struct to store intel sleep states
@@ -433,8 +473,9 @@ void record_log(struct mlx4_en_cq *cq)
 		  		//c1 = cpu_idle_dev->states_usage[1];
 		  		//c2 = cpu_idle_dev->states_usage[2]; 
 		  		//c3 = cpu_idle_dev->states_usage[3];
-
-		  		write_nti64_arm(&ile->Fields.c0, c0); //these sleep states are not accurate to arm type
+					
+				store_int64_asm(&(ile->Fields.c0), c0);
+		  		//write_nti64_arm_test(&(ile->Fields.c0), c0); //these sleep states are not accurate to arm type
 		  		//write_nti64_arm(&ile->Fields.c1, c1);
 			  	//write_nti64_arm(&ile->Fields.c1e, c2);
 		  		//write_nti64_arm(&ile->Fields.c3, c3);

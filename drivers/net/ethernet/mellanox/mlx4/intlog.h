@@ -110,26 +110,26 @@ u32 get_core_number(struct mlx4_en_cq *cq); //not asm but a getter
 
 //inline uint64_t get_rdtsc_intel(void);
 
-inline uint64_t get_rdtsc_arm(void);
+//static inline uint64_t get_rdtsc_arm(void);
 
-inline uint64_t get_rdtsc_arm2(void);
+//static inline uint64_t get_rdtsc_arm2(void);
 
 //inline uint64_t get_llcm_arm(void);
 
-inline uint64_t get_cyc_count_arm(void);
+//static inline uint64_t get_cyc_count_arm(void);
 
-inline uint64_t get_refcyc_arm(void);
+//static inline uint64_t get_refcyc_arm(void);
 
-inline uint64_t get_instr_count_arm(void);
+//static inline uint64_t get_instr_count_arm(void);
 
 // ************************* NTI WRITES ********************************
-inline void write_nti64_intel(void *p, const uint64_t v);
+//static inline void write_nti64_intel(void *p, const uint64_t v);
 
-inline void write_nti64_arm(void *p, const uint64_t v);
+//static inline void write_nti64_arm(void *p, const uint64_t v);
 
-inline void write_nti32_intel(void *p, const uint32_t v);
+//static inline void write_nti32_intel(void *p, const uint32_t v);
 
-inline void write_nti32_arm(void *p, const uint32_t v);
+//static inline void write_nti32_arm(void *p, const uint32_t v);
 
 
 // ************************ ALLOC FUNCS *******************************
