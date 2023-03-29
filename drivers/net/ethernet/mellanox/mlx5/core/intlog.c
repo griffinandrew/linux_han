@@ -25,6 +25,7 @@
 //#include "mlx4_en.h"
 #include "en_stats.h"
 #include "mlx5_core.h"
+#include "en.h"
 
 /*************************************************************************
  * intLog: access tsc tick rate
@@ -456,7 +457,9 @@ void dealloc_log_space(void){                                                   
 /********************************* RECORD LOG ***************************************************/
 /*************************************************************************************************/
 
-void record_log(struct mlx4_en_cq *cq) 
+
+//for this driver there is nothing passed to irqreturn_t func that can be used to extract the core atm
+void record_log(void) 
 {
 	  struct Log *il;
    	union LogEntry *ile;
