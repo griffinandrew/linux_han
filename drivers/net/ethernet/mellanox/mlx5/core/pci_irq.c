@@ -76,6 +76,8 @@ int mlx5_irq_detach_nb(struct mlx5_irq_table *irq_table, int vecidx,
 static irqreturn_t mlx5_irq_int_handler(int irq, void *nh)
 {
 	atomic_notifier_call_chain(nh, 0, NULL);
+	//intlog record log
+	≈ß≈ß
 	return IRQ_HANDLED;
 }
 

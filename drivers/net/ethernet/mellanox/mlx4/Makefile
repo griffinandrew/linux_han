@@ -12,6 +12,11 @@ mlx4_en-y := 	en_main.o en_tx.o en_rx.o en_ethtool.o en_port.o en_cq.o \
 mlx4_en-$(CONFIG_MLX4_EN_DCB) += en_dcb_nl.o
 
 
-ccflags-y := -std=gnu99 -march=armv8-a
+#ccflags-y := -std=gnu99 -march=armv8-a 
+
+
+#-std=gcc-arm-linux-gnu-12.1.1-2.el8.aarch64
+
+#-std=gnu99 -march=armv8-a
 
 #-std=gnu99

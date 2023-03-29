@@ -10,6 +10,7 @@
 #include <linux/etherdevice.h>
 #include <linux/ethtool.h>
 
+#include "mlx4_en.h"
 
 // a single LogEntry is a single row of data in the entire log
 union LogEntry { 
@@ -66,7 +67,7 @@ extern struct seq_operations my_seq_ops_intlog; //both declared in c file
 
 
 // not sure if this is needed
-struct mlx4_en_cq *cq;
+//struct mlx4_en_cq *cq;
 
 
 

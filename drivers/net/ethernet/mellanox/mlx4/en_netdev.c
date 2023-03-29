@@ -2992,8 +2992,7 @@ static void mlx4_en_bond_work(struct work_struct *work)
 			if (err)
 				en_err(bond->priv, "Fail to bond device\n");
 		}
-		if (!err) {
-			err = mlx4_port_map_set(dev, &bond->port_map);
+		if ((!(err)) == mlx4_port_map_set(dev, &bond->port_map)){
 			if (err)
 				en_err(bond->priv, "Fail to set port map [%d][%d]: %d\n",
 				       bond->port_map.port1,

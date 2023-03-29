@@ -362,6 +362,9 @@ static inline uint32_t get_instruction_count(void)
 /*************************************************************************************************/ 
 
 
+
+/*
+
 // allocates memory for creation of log 
 int alloc_log_space(void) {
         int flag = 0;
@@ -400,6 +403,54 @@ void dealloc_log_space(void){
 	      }
 	}
 }
+
+*/
+//without for 
+
+// allocates memory for creation of log                                                                                                                                                                                            
+int alloc_log_space(void) {                                                                                                                                                                                                        
+  int flag = 0;                                                                                                                                                                                                                     int i = 0;
+        uint64_t now;                                                                                                                                                                                                                    
+        printk(KERN_INFO "****************** intLog init *******************");                                                                                                                                                    
+        //for(int i = 0; i < NUM_CORES; i++)
+	while (i < NUM_CORES)   
+        {                                                                                                                                                                                                                          
+                logs[i].log = (union LogEntry *)vmalloc(sizeof(union LogEntry) * LOG_SIZE);                                                                                                                                        
+                printk(KERN_INFO "%d vmalloc size=%lu addr=%p\n", i, (sizeof(union LogEntry) * LOG_SIZE), (void*)(logs[i].log));                                                                                                   
+                memset(logs[i].log, 0, (sizeof(union LogEntry) * LOG_SIZE));                                                                                                                                                       
+                if(!(logs[i].log))                                                                                                                                                                                                 
+                {                                                                                                                                                                                                                  
+                        printk(KERN_INFO "Fail to vmalloc logs[%d]->log\n", i);                                                                                                                                                    
+                        flag = 1;                                                                                                                                                                                                  
+                }                                                                                                                                                                                                                  
+                logs[i].itr_joules_last_tsc = 0;                                                                                                                                                                                   
+                logs[i].msix_other_cnt = 0;                                                                                                                                                                                        
+                logs[i].itr_cookie = 0;                                                                                                                                                                                            
+                logs[i].non_itr_cnt = 0;                                                                                                                                                                                           
+                logs[i].itr_cnt = 0;                                                                                                                                                                                               
+                logs[i].perf_started = 0;
+		i++;
+        }                                                                                                                                                                                                                          
+        tsc_per_milli = tsc_khz;                                                                                                                                                                                                   
+        now = get_rdtsc_arm();                                                                                                                                                                                                     
+        store_int64_asm(&(logs[0].log[0].Fields.tsc), now);                                                                                                                                                                        
+        printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);                                                                                                                        
+        return flag;                                                                                                                                                                                                               
+}                                                                                                                                                                                                                                  
+                                                                                                                                                                                                                                   
+                                                                                                                                                                                                                                   
+//deallocate memory for logs                                                                                                                                                                                                       
+void dealloc_log_space(void){                                                                                                                                                                                                             int i =0;
+  //for(int i = 0; i < NUM_CORES; i++)
+        while(i < NUM_CORES)
+        {                                                                                                                                                                                        
+              if(logs[i].log){                                                                                                                                                                                                     
+                      vfree(logs[i].log);                                                                                                                                                                                          
+              }                                                                                                                                                                                                                                 i++;
+        }                                                                                                                                                                                                                          
+}    
+
+
 
 /*************************************************************************************************/
 /********************************* RECORD LOG ***************************************************/
@@ -491,5 +542,3 @@ void record_log(struct mlx4_en_cq *cq)
 		}		
  	}
  }
-  
-	  
