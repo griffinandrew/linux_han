@@ -80,6 +80,15 @@ void mlx5e_trigger_irq(struct mlx5e_icosq *sq)
 	sq->db.ico_wqe[pi].opcode = MLX5_OPCODE_NOP;
 	nopwqe = mlx5e_post_nop(wq, sq->sqn, &sq->pc);
 	mlx5e_notify_hw(wq, sq->pc, sq->uar_map, &nopwqe->ctrl);
+        struct mlx5e_priv *priv = sq->priv; //might be acessing this wrong
+	struct mlx5e_channel *channel = sq->channel; //this is defed as pointer so might be bad syntax here
+	int cpu = channel->cpu; //note channel struct is defed in en.h line 739
+
+	//now that I have the mask, pass to record log to decode and log
+
+	record_log(cpu); //might need to pass struct to chanell stats her to access?
+	//might actually be easier to pass the channel struct and then get dev, stats and core # from there
+	
 }
 
 static bool mlx5e_napi_xsk_post(struct mlx5e_xdpsq *xsksq, struct mlx5e_rq *xskrq)

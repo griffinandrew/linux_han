@@ -261,7 +261,7 @@ static inline long long get_energy_status(void){
 
 //to be called before record log inorder to then pass number to record_log                                                                       //farely sure this is incorrect
 
-
+/*
 
 u32 get_core_number(struct mlx4_en_cq *cq)
 {
@@ -273,7 +273,7 @@ u32 get_core_number(struct mlx4_en_cq *cq)
         core_num = mcq.cons_index;
         return core_num;
 }
-
+*/
 /*************************************************************************************************/
 //*********************************** ARCH SPEC NTI **********************************************
 //used for non-temporal store instruction so our logging doesnt interfere with performance
@@ -459,7 +459,7 @@ void dealloc_log_space(void){                                                   
 
 
 //for this driver there is nothing passed to irqreturn_t func that can be used to extract the core atm
-void record_log(void) 
+void record_log(struct mlx5e_channel *channel)	
 {
 	  struct Log *il;
    	union LogEntry *ile;
@@ -472,9 +472,12 @@ void record_log(void)
     long long energy;
 	
    	struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
-   	int core_n = get_core_number(cq);
    
-   	il = &logs[core_n];
+	int cpu = channel->cpu;
+	struct mlx5e_priv *priv = channel->priv; //from these two structs should be able to access all the stats and everything
+	struct mlx5_core_dev *mdev = channel->mdev; 
+
+   	il = &logs[cpu];
    	icnt = il->itr_cnt;
 
    	if(icnt < LOG_SIZE) 

@@ -107,7 +107,7 @@ int ct_open(struct inode *inode, struct file *file);
 
 
 //************************** ASM SPECIAL REG READS **********************
-u32 get_core_number(struct mlx4_en_cq *cq); //not asm but a getter
+//u32 get_core_number(struct mlx4_en_cq *cq); //not asm but a getter
 
 //inline uint64_t get_rdtsc_intel(void);
 
@@ -139,4 +139,4 @@ int alloc_log_space(void);
 void dealloc_log_space(void);
 
 // ************************** RECORD LOG ********************************
-void record_log(struct mlx4_en_cq *cq);
+void record_log(struct mlx5e_channel *channel);
