@@ -3420,8 +3420,8 @@ static irqreturn_t ixgbe_msix_clean_rings(int irq, void *data)
 	  // at minimum every 1 millisecond
 	  if ((now - last) > ixgbe_tsc_per_milli) {
 	    // save joules
-	    rdmsrl(0x611, res);
-	    write_nti64(&ile->Fields.joules, res);;
+	   // rdmsrl(0x611, res);
+	   // write_nti64(&ile->Fields.joules, res);;
 
 	    // store current RDTSC timetsamp
 	    il->itr_joules_last_tsc = now;
@@ -3433,20 +3433,20 @@ static irqreturn_t ixgbe_msix_clean_rings(int irq, void *data)
 
 	      // start logging hardware statistics
 	      // last-level cache miss
-	      rdmsrl(0xC1, tmp);
-	      write_nti64(&ile->Fields.nllc_miss, tmp);
+	      //rdmsrl(0xC1, tmp);
+	      //write_nti64(&ile->Fields.nllc_miss, tmp);
 		
 	      // instructions
-	      rdmsrl(0x309, tmp);
-	      write_nti64(&ile->Fields.ninstructions, tmp);
+	      //rdmsrl(0x309, tmp);
+	      //write_nti64(&ile->Fields.ninstructions, tmp);
 		
 	      // cycles
-	      rdmsrl(0x30A, tmp);
-	      write_nti64(&ile->Fields.ncycles, tmp);	     
+	      //rdmsrl(0x30A, tmp);
+	      //write_nti64(&ile->Fields.ncycles, tmp);	     
 		
 	      // ref cycles
-	      rdmsrl(0x30B, tmp);
-	      write_nti64(&ile->Fields.nref_cycles, tmp);
+	      //rdmsrl(0x30B, tmp);
+	      //write_nti64(&ile->Fields.nref_cycles, tmp);
 		
 	      // Intel C-states from intel_idle.c	      
 	      write_nti64(&ile->Fields.c0, cpu_idle_dev->intel_idle_states_usage[0]);

@@ -29,7 +29,9 @@
 /*************************************************************************
  * intLog: access tsc tick rate
  *************************************************************************/
-extern unsigned int tsc_khz;
+extern unsigned int tsc_khz = 0; //this should not be init to 0
+
+//not sure why this had to be included as extern
 
 /*************************************************************************
  * intLog: see definitions in intlog.h
@@ -270,8 +272,10 @@ static inline void write_nti64_intel(void *p, const uint64_t v) {
 
 /*
 //attempt at re-writing in arm assembly
-static inline void write_nti64_arm(void *p, const uint64_t v) {
-	asm volatile("stnp %x[v], %x[p], #0\n"
+static inline void write_nti63_arm(void *p, const uint64_t v) {
+	
+	asm volatile("LDNP x8, %x[p]"
+		     "stnp %x[v], %x[p], #0\n"
 	             :[p] "+r" (p)
 	             :[v] "r" (v)
 	             : "memory");
@@ -286,12 +290,20 @@ static inline void write_nti64_arm_test(void *p, const uint64_t v) {
 }
 
 static inline void store_int64_asm(void *p, const uint64_t v) {
-    asm volatile(
-        "ldr x0, %x[p]\n"
-        "stp %x[v], x0, [%x[p]]\n"
+    /*asm volatile(
+        "ldr x8, [p]\n"
+	"ldr x9, v\n"
+
+        "stnp %x[v], x8, [%x[p]]\n"
         : [p] "+r" (p)
         : [v] "r" (v)
-        : "memory", "x0"
+        : "memory", "x8"
+    );
+    */
+	asm volatile("str %x[v], [%x[p]]"
+        : [p] "+r" (p)
+        : [v] "r" (v)
+        : "memory"
     );
 }
 

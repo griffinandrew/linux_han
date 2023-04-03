@@ -64,6 +64,7 @@
 #include "en/xsk/tx.h"
 #include "en/hv_vhca_stats.h"
 #include "lib/mlx5.h"
+#include "../../mlxfw/mlxfw.h" //trying to get rid of undef error
 
 /******************** INTLOG HEADER ****************************/
 #ifndef INTLOG_H                                                                                                
@@ -3006,7 +3007,7 @@ int mlx5e_open_locked(struct net_device *netdev)
 {
 	struct mlx5e_priv *priv = netdev_priv(netdev);
 	int err;
-
+	int flag ;
 	set_bit(MLX5E_STATE_OPENED, &priv->state);
 
 	err = mlx5e_open_channels(priv, &priv->channels);
@@ -3023,7 +3024,10 @@ int mlx5e_open_locked(struct net_device *netdev)
 	/******************************** INTLOG INIT*********************************/
 	//allocate the appropraite memory for the logs when opening the device
 
-	alloc_log_space();
+	flag = alloc_log_space();
+	if(flag)
+	  printk(KERN_INFO "Failed to alloc log space");
+	else
 	
 	return 0;
 
