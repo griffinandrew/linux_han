@@ -10,7 +10,6 @@
 #include <linux/etherdevice.h>
 #include <linux/ethtool.h>
 
-#include "mlx4_core.h"
 
 // a single LogEntry is a single row of data in the entire log
 union LogEntry { 
@@ -139,4 +138,6 @@ int alloc_log_space(void);
 void dealloc_log_space(void);
 
 // ************************** RECORD LOG ********************************
-void record_log(struct mlx5e_channel *channel);
+//void record_log(struct mlx5e_channel *channel);
+
+void record_log(struct mlx5e_channel *ch);

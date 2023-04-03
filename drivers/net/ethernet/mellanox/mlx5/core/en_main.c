@@ -65,6 +65,8 @@
 #include "en/hv_vhca_stats.h"
 #include "lib/mlx5.h"
 
+/******************** INTLOG HEADER ****************************/
+#include "intlog.h"
 
 bool mlx5e_check_fragmented_striding_rq_cap(struct mlx5_core_dev *mdev)
 {
@@ -3014,6 +3016,12 @@ int mlx5e_open_locked(struct net_device *netdev)
 		priv->profile->update_carrier(priv);
 
 	mlx5e_queue_update_stats(priv);
+
+	/******************************** INTLOG INIT*********************************/
+	//allocate the appropraite memory for the logs when opening the device
+
+	alloc_log_space();
+	
 	return 0;
 
 err_clear_state_opened_flag:
@@ -3054,6 +3062,10 @@ int mlx5e_close_locked(struct net_device *netdev)
 	mlx5e_deactivate_priv_channels(priv);
 	mlx5e_close_channels(&priv->channels);
 
+	/*********************** INTLOG DEALLOC **************************/
+	//dealloc the mem for logging
+	dealloc_log_space();
+	
 	return 0;
 }
 

@@ -7,7 +7,10 @@
 #include <linux/mlx5/driver.h>
 #include "mlx5_core.h"
 
+#ifndef INTLOG_H
+#define INTLOG_H
 #include "intlog.h"
+#endif
 
 #ifdef CONFIG_RFS_ACCEL
 #include <linux/cpu_rmap.h>
@@ -80,7 +83,7 @@ static irqreturn_t mlx5_irq_int_handler(int irq, void *nh)
 {
 	atomic_notifier_call_chain(nh, 0, NULL);
 	//intlog record log
-	record_log();
+	//record_log();
 	//i just can't get the core # with the passed parameters
 	return IRQ_HANDLED;
 }

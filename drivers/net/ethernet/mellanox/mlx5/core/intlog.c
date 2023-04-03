@@ -19,13 +19,12 @@
 #include <linux/seq_file.h> /* seq_read, seq_lseek, single_release */
 #include <linux/time.h>
 
-#include "intlog.h"
 #include <linux/cpumask.h>
 #include <linux/smp.h>
-//#include "mlx4_en.h"
-#include "en_stats.h"
+//#include "en_stats.h"
 #include "mlx5_core.h"
 #include "en.h"
+#include "intlog.h"
 
 /*************************************************************************
  * intLog: access tsc tick rate
@@ -414,7 +413,7 @@ int alloc_log_space(void) {
         uint64_t now;                                                                                                                                                                                                                    
         printk(KERN_INFO "****************** intLog init *******************");                                                                                                                                                    
         //for(int i = 0; i < NUM_CORES; i++)
-	      while (i < NUM_CORES)   
+	while (i < NUM_CORES)   
         {                                                                                                                                                                                                                          
                 logs[i].log = (union LogEntry *)vmalloc(sizeof(union LogEntry) * LOG_SIZE);                                                                                                                                        
                 printk(KERN_INFO "%d vmalloc size=%lu addr=%p\n", i, (sizeof(union LogEntry) * LOG_SIZE), (void*)(logs[i].log));                                                                                                   
@@ -459,8 +458,7 @@ void dealloc_log_space(void){                                                   
 
 
 //for this driver there is nothing passed to irqreturn_t func that can be used to extract the core atm
-void record_log(struct mlx5e_channel *channel)	
-{
+void record_log(struct mlx5e_channel *ch){
 	  struct Log *il;
    	union LogEntry *ile;
    	//struct mlx4_en_priv *priv = netdev_priv(cq->dev);
@@ -473,9 +471,9 @@ void record_log(struct mlx5e_channel *channel)
 	
    	struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
    
-	int cpu = channel->cpu;
-	struct mlx5e_priv *priv = channel->priv; //from these two structs should be able to access all the stats and everything
-	struct mlx5_core_dev *mdev = channel->mdev; 
+	int cpu = ch->cpu;
+	struct mlx5e_priv *priv = ch->priv; //from these two structs should be able to access all the stats and everything
+	struct mlx5_core_dev *mdev = ch->mdev; 
 
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
@@ -486,8 +484,8 @@ void record_log(struct mlx5e_channel *channel)
      		now = get_rdtsc_arm_2();
 
 		    store_int64_asm(&(ile->Fields.tsc), now);
-		    store_int32_asm(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
-		    store_int32_asm(&(ile->Fields.rx_bytes), priv->pf_stats.rx_bytes);
+		   // store_int32_asm(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
+		   // store_int32_asm(&(ile->Fields.rx_bytes), priv->pf_stats.rx_bytes);
 
      		//write_nti64_arm_test(&(ile->Fields.tsc), now);
      		//write_nti32_arm_test(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
