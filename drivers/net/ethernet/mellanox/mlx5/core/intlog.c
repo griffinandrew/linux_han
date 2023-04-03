@@ -254,25 +254,7 @@ static inline long long get_energy_status(void){
 		     : "r" (reg));
 	return val;
 }
-/*************************************************************************************************/
-/********************************** GETTER TO EXTARCT CORE # *************************************/
-/*************************************************************************************************/
 
-//to be called before record log inorder to then pass number to record_log                                                                       //farely sure this is incorrect
-
-/*
-
-u32 get_core_number(struct mlx4_en_cq *cq)
-{
-        u32 core_num;
-
-	struct mlx4_cq mcq;
-	mcq = cq->mcq;
-	
-        core_num = mcq.cons_index;
-        return core_num;
-}
-*/
 /*************************************************************************************************/
 //*********************************** ARCH SPEC NTI **********************************************
 //used for non-temporal store instruction so our logging doesnt interfere with performance
@@ -409,45 +391,22 @@ void dealloc_log_space(void){
 
 // allocates memory for creation of log                                                                                                                                                                                            
 int alloc_log_space(void) {                                                                                                                                                                                                        
-  int flag = 0;                                                                                                                                                                                                                     int i = 0;
+        int flag = 0;                                                                                                                                                                                                                     int i = 0;
         uint64_t now;                                                                                                                                                                                                                    
         printk(KERN_INFO "****************** intLog init *******************");                                                                                                                                                    
-        //for(int i = 0; i < NUM_CORES; i++)
-	while (i < NUM_CORES)   
-        {                                                                                                                                                                                                                          
-                logs[i].log = (union LogEntry *)vmalloc(sizeof(union LogEntry) * LOG_SIZE);                                                                                                                                        
-                printk(KERN_INFO "%d vmalloc size=%lu addr=%p\n", i, (sizeof(union LogEntry) * LOG_SIZE), (void*)(logs[i].log));                                                                                                   
-                memset(logs[i].log, 0, (sizeof(union LogEntry) * LOG_SIZE));                                                                                                                                                       
-                if(!(logs[i].log))                                                                                                                                                                                                 
-                {                                                                                                                                                                                                                  
-                        printk(KERN_INFO "Fail to vmalloc logs[%d]->log\n", i);                                                                                                                                                    
-                        flag = 1;                                                                                                                                                                                                  
-                }                                                                                                                                                                                                                  
-                logs[i].itr_joules_last_tsc = 0;                                                                                                                                                                                   
-                logs[i].msix_other_cnt = 0;                                                                                                                                                                                        
-                logs[i].itr_cookie = 0;                                                                                                                                                                                            
-                logs[i].non_itr_cnt = 0;                                                                                                                                                                                           
-                logs[i].itr_cnt = 0;                                                                                                                                                                                               
-                logs[i].perf_started = 0;
-		            i++;
-        }                                                                                                                                                                                                                          
-        tsc_per_milli = tsc_khz;                                                                                                                                                                                                   
-        now = get_rdtsc_arm();                                                                                                                                                                                                     
-        store_int64_asm(&(logs[0].log[0].Fields.tsc), now);                                                                                                                                                                        
-        printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);                                                                                                                        
-        return flag;                                                                                                                                                                                                               
-}                                                                                                                                                                                                                                  
+        while (i < NUM_CORES)   
+        {                                                                                                                                                                                                                                         logs[i].log = (union LogEntry *)vmalloc(sizeof(union LogEntry) * LOG_SIZE);                                                                                                                                                       printk(KERN_INFO "%d vmalloc size=%lu addr=%p\n", i, (sizeof(union LogEntry) * LOG_SIZE), (void*)(logs[i].log));                                                                                                                  memset(logs[i].log, 0, (sizeof(union LogEntry) * LOG_SIZE));                                                                                                                                                                      if(!(logs[i].log))                                                                                                                                                                                                                {                                                                                                                                                                                                                                         printk(KERN_INFO "Fail to vmalloc logs[%d]->log\n", i);                                                                                                                                                                           flag = 1;                                                                                                                                                                                                                 }                                                                                                                                                                                                                                 logs[i].itr_joules_last_tsc = 0;                                                                                                                                                                                                  logs[i].msix_other_cnt = 0;                                                                                                                                                                                                       logs[i].itr_cookie = 0;                                                                                                                                                                                                           logs[i].non_itr_cnt = 0;                                                                                                                                                                                                          logs[i].itr_cnt = 0;                                                                                                                                                                                                              logs[i].perf_started = 0;
+	        i++;
+        }                                                                                                                                                                                                                                 tsc_per_milli = tsc_khz;                                                                                                                                                                                                          now = get_rdtsc_arm();                                                                                                                                                                                                            store_int64_asm(&(logs[0].log[0].Fields.tsc), now);                                                                                                                                                                               printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);                                                                                                                               return flag;                                                                                                                                                                                                              }                                                                                                                                                                                                                                  
                                                                                                                                                                                                                                    
                                                                                                                                                                                                                                    
 //deallocate memory for logs                                                                                                                                                                                                       
-void dealloc_log_space(void){                                                                                                                                                                                                             int i =0;
-  //for(int i = 0; i < NUM_CORES; i++)
+void dealloc_log_space(void){                                                                                                                                                                                                             int i = 0;
         while(i < NUM_CORES)
         {                                                                                                                                                                                        
-              if(logs[i].log){                                                                                                                                                                                                     
-                      vfree(logs[i].log);                                                                                                                                                                                          
-              }                                                                                                                                                                                                                                 i++;
-        }                                                                                                                                                                                                                          
+	    if(logs[i].log){                                                                                                                                                                                                     		    vfree(logs[i].log); 
+            }                                                                                                                                                                                                                                 i++;
+        }                                                                                                                                                                                                                         
 }    
 
 
@@ -459,15 +418,15 @@ void dealloc_log_space(void){                                                   
 
 //for this driver there is nothing passed to irqreturn_t func that can be used to extract the core atm
 void record_log(struct mlx5e_channel *ch){
-	  struct Log *il;
+	struct Log *il;
    	union LogEntry *ile;
    	//struct mlx4_en_priv *priv = netdev_priv(cq->dev);
    	uint64_t now = 0, last = 0;
    	int icnt = 0;
-	  long long c0;
-	  long long num_cycs;
-     //	long long num_ref_cycs;
-    long long energy;
+	long long c0;
+	long long num_cycs;
+        //	long long num_ref_cycs;
+        long long energy;
 	
    	struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
    
@@ -479,13 +438,13 @@ void record_log(struct mlx5e_channel *ch){
    	icnt = il->itr_cnt;
 
    	if(icnt < LOG_SIZE) 
-	  {
+        {
      		ile = &il->log[icnt];
      		now = get_rdtsc_arm_2();
 
-		    store_int64_asm(&(ile->Fields.tsc), now);
-		   // store_int32_asm(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
-		   // store_int32_asm(&(ile->Fields.rx_bytes), priv->pf_stats.rx_bytes);
+		store_int64_asm(&(ile->Fields.tsc), now);
+		// store_int32_asm(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
+		// store_int32_asm(&(ile->Fields.rx_bytes), priv->pf_stats.rx_bytes);
 
      		//write_nti64_arm_test(&(ile->Fields.tsc), now);
      		//write_nti32_arm_test(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
@@ -494,50 +453,50 @@ void record_log(struct mlx5e_channel *ch){
      		//get last rdtsc
      		last = il->itr_joules_last_tsc;
 
-     	  if((now - last) > tsc_per_milli)
-		    {
+     	        if((now - last) > tsc_per_milli)
+		{
 		        //store current rdtsc
 		        il->itr_joules_last_tsc = now;
-	     		  //first get the joules
-	     		  energy = get_energy_status();
+	     		//first get the joules
+	     		energy = get_energy_status();
 
-			      store_int64_asm(&(ile->Fields.joules), energy);
-			      //write_nti64_arm_test(&(ile->Fields.joules), energy); 
+			store_int64_asm(&(ile->Fields.joules), energy);
+			//write_nti64_arm_test(&(ile->Fields.joules), energy); 
 	     	       
-     			  if(il->perf_started) 
-			      {
+     			if(il->perf_started) 
+			{
 			          //num_miss = get_llcm_arm(); //this para is defined in header
 			          //write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
 		 		
-				        num_cycs = get_instr_count_arm();
-		  		      store_int64_asm(&(ile->Fields.ninstructions), num_cycs);
-				        //write_nti64_arm_test(&(ile->Fields.ninstructions), num_cycs);
+				  num_cycs = get_instr_count_arm();
+		  		  store_int64_asm(&(ile->Fields.ninstructions), num_cycs);
+				  //write_nti64_arm_test(&(ile->Fields.ninstructions), num_cycs);
 		  
 			          //	num_ref_cycs = get_refcyc_arm();
 			          //	store_int64_asm(&(ile->Fields.ncycles), num_ref_cycs);
-		  		      //write_nti64_arm_test(&(ile->Fields.ncycles), num_ref_cycs);
+		  		  //write_nti64_arm_test(&(ile->Fields.ncycles), num_ref_cycs);
 
-		  		      //need to include all the sleep states
-		  		      //not sure why he created his own array within the idle struct to store intel sleep states
+		  		  //need to include all the sleep states
+		  		  //not sure why he created his own array within the idle struct to store intel sleep states
 
-				        //this is wrong the states usage struct doesnt tell time in certain state
-				        struct cpuidle_state_usage *usage;
-				        usage = cpu_idle_dev->states_usage;
-				        c0 = usage->usage;
-				        //c0 = cpu_idle_dev->states_usage[0];
-		  		      //c1 = cpu_idle_dev->states_usage[1];
-		  		      //c2 = cpu_idle_dev->states_usage[2]; 
-		  	      	//c3 = cpu_idle_dev->states_usage[3];
+				  //this is wrong the states usage struct doesnt tell time in certain state
+				  struct cpuidle_state_usage *usage;
+				  usage = cpu_idle_dev->states_usage;
+				  c0 = usage->usage;
+				  //c0 = cpu_idle_dev->states_usage[0];
+		  		  //c1 = cpu_idle_dev->states_usage[1];
+		  		  //c2 = cpu_idle_dev->states_usage[2]; 
+		  	      	  //c3 = cpu_idle_dev->states_usage[3];
 					
-				        store_int64_asm(&(ile->Fields.c0), c0);
-		  		      //write_nti64_arm_test(&(ile->Fields.c0), c0); //these sleep states are not accurate to arm type
-		  		      //write_nti64_arm(&ile->Fields.c1, c1);
-			  	      //write_nti64_arm(&ile->Fields.c1e, c2);
-		  		      //write_nti64_arm(&ile->Fields.c3, c3);
+				  store_int64_asm(&(ile->Fields.c0), c0);
+		  		  //write_nti64_arm_test(&(ile->Fields.c0), c0); //these sleep states are not accurate to arm type
+		  		  //write_nti64_arm(&ile->Fields.c1, c1);
+			  	  //write_nti64_arm(&ile->Fields.c1e, c2);
+		  		  //write_nti64_arm(&ile->Fields.c3, c3);
 
-		  		      //log hardware stats here
-		  		      // like c stats, cycles, LLCM, instructions
-			      }
+		  		  //log hardware stats here
+		  		 // like c stats, cycles, LLCM, instructions
+		        }
 			
 		}
 		if(il->perf_started == 0) 

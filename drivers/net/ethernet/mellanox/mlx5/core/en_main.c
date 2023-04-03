@@ -66,7 +66,10 @@
 #include "lib/mlx5.h"
 
 /******************** INTLOG HEADER ****************************/
-#include "intlog.h"
+#ifndef INTLOG_H                                                                                                
+#define INTLOG_H                                                                                                
+#include "intlog.h"                                                                                             
+#endif
 
 bool mlx5e_check_fragmented_striding_rq_cap(struct mlx5_core_dev *mdev)
 {
