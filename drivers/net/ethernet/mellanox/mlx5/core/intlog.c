@@ -450,11 +450,7 @@ void record_log(struct mlx5e_channel *ch){
    	int icnt = 0;
 	long long c0;
 	long long num_cycs;
-<<<<<<< HEAD
-        //	long long num_ref_cycs;
-=======
         //long long num_ref_cycs;
->>>>>>> 8b558f5e3cc9a11d210536b17f03f8569d6ecfb8
         long long energy;
 	
    	struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
@@ -467,11 +463,7 @@ void record_log(struct mlx5e_channel *ch){
    	icnt = il->itr_cnt;
 
    	if(icnt < LOG_SIZE) 
-<<<<<<< HEAD
-        {
-=======
 	{
->>>>>>> 8b558f5e3cc9a11d210536b17f03f8569d6ecfb8
      		ile = &il->log[icnt];
      		now = get_rdtsc_arm_2();
 
@@ -485,12 +477,7 @@ void record_log(struct mlx5e_channel *ch){
 
      		//get last rdtsc
      		last = il->itr_joules_last_tsc;
-
-<<<<<<< HEAD
-     	        if((now - last) > tsc_per_milli)
-=======
-     	  	if((now - last) > tsc_per_milli)
->>>>>>> 8b558f5e3cc9a11d210536b17f03f8569d6ecfb8
+                if((now - last) > tsc_per_milli)
 		{
 		        //store current rdtsc
 		        il->itr_joules_last_tsc = now;
@@ -502,7 +489,6 @@ void record_log(struct mlx5e_channel *ch){
 	     	       
      			if(il->perf_started) 
 			{
-<<<<<<< HEAD
 			          //num_miss = get_llcm_arm(); //this para is defined in header
 			          //write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
 		 		
@@ -535,41 +521,6 @@ void record_log(struct mlx5e_channel *ch){
 		  		  //log hardware stats here
 		  		 // like c stats, cycles, LLCM, instructions
 		        }
-=======
-			 	//num_miss = get_llcm_arm(); //this para is defined in header
-			 	//write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
-		 		
-			 	num_cycs = get_instr_count_arm();
-		         	store_int64_asm(&(ile->Fields.ninstructions), num_cycs);
-				//write_nti64_arm_test(&(ile->Fields.ninstructions), num_cycs);
-		  
-			        //	num_ref_cycs = get_refcyc_arm();
-			        //	store_int64_asm(&(ile->Fields.ncycles), num_ref_cycs);
-		  		//write_nti64_arm_test(&(ile->Fields.ncycles), num_ref_cycs);
-
-		  		//need to include all the sleep states
-		  		//not sure why he created his own array within the idle struct to store intel sleep states
-
-				 //this is wrong the states usage struct doesnt tell time in certain state
-				 struct cpuidle_state_usage *usage;
-				 usage = cpu_idle_dev->states_usage;
-				 c0 = usage->usage;
-				 //c0 = cpu_idle_dev->states_usage[0];
-		  		 //c1 = cpu_idle_dev->states_usage[1];
-		  		 //c2 = cpu_idle_dev->states_usage[2]; 
-		  	      	 //c3 = cpu_idle_dev->states_usage[3];
-					
-				 store_int64_asm(&(ile->Fields.c0), c0);
-		  		 //write_nti64_arm_test(&(ile->Fields.c0), c0); //these sleep states are not accurate to arm type
-		  		 //write_nti64_arm(&ile->Fields.c1, c1);
-			  	 //write_nti64_arm(&ile->Fields.c1e, c2);
-		  		 //write_nti64_arm(&ile->Fields.c3, c3);
-
-		  		      //log hardware stats here
-		  		      // like c stats, cycles, LLCM, instructions
-			 }
->>>>>>> 8b558f5e3cc9a11d210536b17f03f8569d6ecfb8
-			
 		}
 		if(il->perf_started == 0) 
 		{
