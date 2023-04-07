@@ -48,6 +48,9 @@
 #include "vxlan.h"
 #include "en/port.h"
 
+//****************** INTLOG HEADER **************************/
+#include "intlog.h"
+
 struct mlx5e_rq_param {
 	u32			rqc[MLX5_ST_SZ_DW(rqc)];
 	struct mlx5_wq_param	wq;
@@ -2910,6 +2913,7 @@ int mlx5e_open_locked(struct net_device *netdev)
 {
 	struct mlx5e_priv *priv = netdev_priv(netdev);
 	int err;
+	int flag;
 
 	set_bit(MLX5E_STATE_OPENED, &priv->state);
 
@@ -2925,6 +2929,14 @@ int mlx5e_open_locked(struct net_device *netdev)
 	if (priv->profile->update_stats)
 		queue_delayed_work(priv->wq, &priv->update_stats_work, 0);
 
+	/******************************** INTLOG INIT*********************************/
+	//allocate the appropraite memory for the logs when opening the device
+
+	flag = alloc_log_space();
+	if(flag)
+	  printk(KERN_INFO "Failed to alloc log space");
+	else
+	
 	return 0;
 
 err_clear_state_opened_flag:
@@ -2964,6 +2976,10 @@ int mlx5e_close_locked(struct net_device *netdev)
 	netif_carrier_off(priv->netdev);
 	mlx5e_deactivate_priv_channels(priv);
 	mlx5e_close_channels(&priv->channels);
+
+	/*********************** INTLOG DEALLOC **************************/
+	//dealloc the mem for logging
+	dealloc_log_space();
 
 	return 0;
 }
