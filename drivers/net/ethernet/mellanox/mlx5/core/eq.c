@@ -456,7 +456,8 @@ static void mlx5_eq_cq_event(struct mlx5_eq *eq, u32 cqn, int event_type)
 {
 	struct mlx5_core_cq *cq = mlx5_eq_cq_get(eq, cqn);
 
-	if (unlikely(!mlx5_core_warn(eq->dev, "Async event for bogus CQ 0x%x\n", cqn);
+	if (unlikely(!cq)){
+		mlx5_core_warn(eq->dev, "Async event for bogus CQ 0x%x\n", cqn);
 		return;
 	}
 
