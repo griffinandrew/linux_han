@@ -613,7 +613,9 @@ static irqreturn_t mlx5_eq_int(int irq, void *eq_ptr)
 	struct net_device *netdev = mlx5_lag_get_roce_netdev(dev);
 	struct mlx5e_priv *priv = netdev_priv(netdev);
 	//from priv should be able to get channel hence cpu #
-
+	
+	//send to record log
+	record_log(priv); //not sure if this should be & or not 
 		
 
 	return IRQ_HANDLED;

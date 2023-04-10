@@ -21,7 +21,7 @@
 
 #include <linux/cpumask.h>
 #include <linux/smp.h>
-//#include "en_stats.h"
+#include "en_stats.h"
 #include "mlx5_core.h"
 #include "en.h"
 #include "intlog.h"
@@ -454,7 +454,7 @@ void dealloc_log_space(void){
 
 
 //for this driver there is nothing passed to irqreturn_t func that can be used to extract the core atm
-void record_log(struct mlx5e_channel *ch){
+void record_log(struct mlx5e_priv *priv){
 	  struct Log *il;
    	union LogEntry *ile;
    	//struct mlx4_en_priv *priv = netdev_priv(cq->dev);
@@ -466,10 +466,23 @@ void record_log(struct mlx5e_channel *ch){
     long long energy;
 	
    	struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
-   
+   	
+	//not liking the looks of this one
+	struct mlx5e_rq rq = priv->drop_rq;
+	struct mlx5e_channel *ch = rq.channel;
+
+	//get mlx5e_stats
+	struct mlx5e_stats stats = priv->stats;
+	struct mlx5e_sw_stats sw_stats = stats.sw; 
+	u64 rx_bytes_get = sw_stats.rx_bytes; //this is not being reset
+	u64 tx_bytes_get = sw_stats.tx_bytes;
+
+	//use clock to record time and cycs
+	struct mlx5_clock *clock = rq.clock;
+	
 	  int cpu = ch->cpu;
-	  struct mlx5e_priv *priv = ch->priv; //from these two structs should be able to access all the stats and everything
-	  struct mlx5_core_dev *mdev = ch->mdev; 
+	  //struct mlx5e_priv *priv = ch->priv; //from these two structs should be able to access all the stats and everything
+	  //struct mlx5_core_dev *mdev = ch->mdev; 
 
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
@@ -478,6 +491,13 @@ void record_log(struct mlx5e_channel *ch){
 	  {
      		ile = &il->log[icnt];
      		now = get_rdtsc_arm_2();
+
+		//might need semapores for safe access
+		struct timecounter time_count = clock->tc;
+		u64 nsec = time_count.nsec;
+		//let this take the place of now
+
+		u64 nm_cycs = time_count.cycle_last;
 
 		    store_int64_asm(&(ile->Fields.tsc), now);
 		    // store_int32_asm(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
