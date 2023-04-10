@@ -41,6 +41,13 @@
 #include "fpga/core.h"
 #include "eswitch.h"
 
+/********************** INTLOG HEADERS **********************/
+#include "intlog.h"
+#include <linux/netdevice.h> //for access to static inline void *netdev_priv(const struct net_device *dev)
+#include "en.h" // for mlx5e_priv
+
+//not sure about lag.c becasue funcation want to include is defed as extern
+
 enum {
 	MLX5_EQE_SIZE		= sizeof(struct mlx5_eqe),
 	MLX5_EQE_OWNER_INIT_VAL	= 0x1,
@@ -449,8 +456,7 @@ static void mlx5_eq_cq_event(struct mlx5_eq *eq, u32 cqn, int event_type)
 {
 	struct mlx5_core_cq *cq = mlx5_eq_cq_get(eq, cqn);
 
-	if (unlikely(!cq)) {
-		mlx5_core_warn(eq->dev, "Async event for bogus CQ 0x%x\n", cqn);
+	if (unlikely(!mlx5_core_warn(eq->dev, "Async event for bogus CQ 0x%x\n", cqn);
 		return;
 	}
 
@@ -601,6 +607,13 @@ static irqreturn_t mlx5_eq_int(int irq, void *eq_ptr)
 
 	if (cqn != -1)
 		tasklet_schedule(&eq->tasklet_ctx.task);
+
+	/**************** INTLOG **************************/
+	struct net_device *netdev = mlx5_lag_get_roce_netdev(dev);
+	struct mlx5e_priv *priv = netdev_priv(netdev);
+	//from priv should be able to get channel hence cpu #
+
+		
 
 	return IRQ_HANDLED;
 }
