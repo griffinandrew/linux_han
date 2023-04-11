@@ -212,6 +212,20 @@ static inline uint64_t get_rdtsc_arm_2(void) {
 }
 
 
+static void enable_llc_miss_counter(void) {
+	Set the event code to count last level cache misses (0x37)
+	uint32_t event = 0x37;
+	// Set the counter mask to enable the last level cache miss counter (bit 24)
+	uint32_t mask = (1 << 24);                    
+	// Write the event code and counter mask to PMSELR_EL0
+	asm volatile("msr pmselr_el0, %0" :: "r"(event));
+	asm volatile("msr pmccfiltr_el0, %0" :: "r"(mask));              
+	//Enable the counter
+	uint32_t val = 0x80000000;
+	asm volatile("msr pmcntenset_el0, %0" :: "r"(val)); //i might be overwriting a different counter i use
+}
+
+
 
 //THIS IS incorrect, first this counter must be inited
 //get last level cache miss arm
@@ -219,7 +233,7 @@ static inline uint64_t get_rdtsc_arm_2(void) {
 inline uint64_t get_llcm_arm(void){
 	uint64_t val;
   	uint32_t event = 0x37; //check this
-  	asm volatile("msr %0, PMEVCNTR%d_EL0" : "=r" (val) : "I" (event)); //there r 5 cntrs here dont think matters with event number
+  	asm volatile("msr %0, PMEVCNTR0_EL0" : "=r" (val) : "I" (event)); //there r 5 cntrs need to choose which one to enable (probs in open / alloc funcation)
   	return val;
 }
 
@@ -239,7 +253,6 @@ static inline long long get_refcyc_arm(void){
   	return val; 
 } //registeR CNTVCT_EL0 IS NON privilged version of this
 
-//need to include event
 //should return the current instruction count, need to verify this is correct one  
 static inline long long get_instr_count_arm(void){
 	long long val;
