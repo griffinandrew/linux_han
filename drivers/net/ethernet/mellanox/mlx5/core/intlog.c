@@ -21,7 +21,7 @@
 
 #include <linux/cpumask.h>
 #include <linux/smp.h>
-#include "en_stats.h"
+//#include "en_stats.h"
 #include "mlx5_core.h"
 #include "en.h"
 #include "intlog.h"
@@ -474,8 +474,8 @@ void record_log(struct mlx5e_priv *priv){
 	//get mlx5e_stats
 	struct mlx5e_stats stats = priv->stats;
 	struct mlx5e_sw_stats sw_stats = stats.sw; 
-	u64 rx_bytes_get = sw_stats.rx_bytes; //this is not being reset
-	u64 tx_bytes_get = sw_stats.tx_bytes;
+//	u64 rx_bytes_get = sw_stats.rx_bytes; //this is not being reset
+//	u64 tx_bytes_get = sw_stats.tx_bytes;
 
 	//use clock to record time and cycs
 	struct mlx5_clock *clock = rq.clock;
