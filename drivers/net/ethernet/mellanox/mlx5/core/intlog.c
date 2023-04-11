@@ -211,16 +211,17 @@ static inline uint64_t get_rdtsc_arm_2(void) {
   	return tsc;
 }
 
-/*
+
+
+//THIS IS incorrect, first this counter must be inited
 //get last level cache miss arm
 //llc using rdmsr command
 inline uint64_t get_llcm_arm(void){
 	uint64_t val;
   	uint32_t event = 0x37; //check this
-  	asm volatile("msr %0, PMEVCNTR%d_EL0" : "=r" (val) : "I" (event));
+  	asm volatile("msr %0, PMEVCNTR%d_EL0" : "=r" (val) : "I" (event)); //there r 5 cntrs here dont think matters with event number
   	return val;
 }
-*/
 
 //gets the current instruction count
 static inline long long get_cyc_count_arm(void){
@@ -230,16 +231,15 @@ static inline long long get_cyc_count_arm(void){
   	return val;
 }
 
-/*
-//gets the number of ref cycles 
+
+//gets the number of ref cycles (phyiscal count register)
 static inline long long get_refcyc_arm(void){
   	long long val;
-  	asm volatile("msr %0, CNTPCT_EL0"
-	             : "=r" (val));
-  	return val;
-}
+  	asm volatile("msr %0, CNTPCT_EL0 " : "=r" (val));
+  	return val; 
+} //registeR CNTVCT_EL0 IS NON privilged version of this
 
-*/
+//need to include event
 //should return the current instruction count, need to verify this is correct one  
 static inline long long get_instr_count_arm(void){
 	long long val;
@@ -247,15 +247,6 @@ static inline long long get_instr_count_arm(void){
   	return val;
 }
 
-
-static inline long long get_energy_status(void){
-	long long val;
-	long long reg = 0x611;
-	asm volatile("msr pmcr_el0, %1; mrs %0, pmccntr_el0"
-		     : "=r" (val)
-		     : "r" (reg));
-	return val;
-}
 
 /*************************************************************************************************/
 //*********************************** ARCH SPEC NTI **********************************************

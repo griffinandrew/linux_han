@@ -77,7 +77,6 @@ void ct_stop(struct seq_file *s, void *v);
 
 int ct_open(struct inode *inode, struct file *file);
 
-
 // ************************ ALLOC FUNCS *******************************
 int alloc_log_space(void);
 
