@@ -26,6 +26,7 @@
 #include "en.h"
 #include "intlog.h"
 
+
 /*************************************************************************
  * intLog: access tsc tick rate
  *************************************************************************/
@@ -211,9 +212,9 @@ static inline uint64_t get_rdtsc_arm_2(void) {
   	return tsc;
 }
 
-
+/*
 static void enable_llc_miss_counter(void) {
-	Set the event code to count last level cache misses (0x37)
+	//Set the event code to count last level cache misses (0x37)
 	uint32_t event = 0x37;
 	// Set the counter mask to enable the last level cache miss counter (bit 24)
 	uint32_t mask = (1 << 24);                    
@@ -236,7 +237,7 @@ inline uint64_t get_llcm_arm(void){
   	asm volatile("msr %0, PMEVCNTR0_EL0" : "=r" (val) : "I" (event)); //there r 5 cntrs need to choose which one to enable (probs in open / alloc funcation)
   	return val;
 }
-
+*/
 //gets the current instruction count
 static inline long long get_cyc_count_arm(void){
 	long long val;
@@ -294,16 +295,6 @@ static inline void write_nti64_arm_test(void *p, const uint64_t v) {
 }
 
 static inline void store_int64_asm(void *p, const uint64_t v) {
-    /*asm volatile(
-        "ldr x8, [p]\n"
-	"ldr x9, v\n"
-
-        "stnp %x[v], x8, [%x[p]]\n"
-        : [p] "+r" (p)
-        : [v] "r" (v)
-        : "memory", "x8"
-    );
-    */
 	asm volatile("str %x[v], [%x[p]]"
         : [p] "+r" (p)
         : [v] "r" (v)
@@ -407,8 +398,8 @@ void dealloc_log_space(void){
 
 // allocates memory for creation of log                                                                                                                                                                                            
 int alloc_log_space(void) {                                                                                                                                                                                                        
-        int flag = 0;                                                                                                                                                                                                                     
-	      int i = 0;
+	int flag = 0;
+	int i = 0;
         uint64_t now;                                                                                                                                                                                                                    
         printk(KERN_INFO "****************** intLog init *******************");                                                                                                                                                    
         while (i < NUM_CORES)   
@@ -469,7 +460,7 @@ void record_log(struct mlx5e_priv *priv){
     //long long num_ref_cycs;
     long long energy;
 	
-   	struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
+   	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
    	
 	//not liking the looks of this one
 	struct mlx5e_rq rq = priv->drop_rq;
@@ -518,9 +509,8 @@ void record_log(struct mlx5e_priv *priv){
 		        //store current rdtsc
 		        il->itr_joules_last_tsc = now;
 	     		  //first get the joules
-	     		  energy = get_energy_status();
 
-			      store_int64_asm(&(ile->Fields.joules), energy);
+			      //store_int64_asm(&(ile->Fields.joules), energy);
 			      //write_nti64_arm_test(&(ile->Fields.joules), energy); 
 	     	       
      			  if(il->perf_started) 
@@ -540,15 +530,15 @@ void record_log(struct mlx5e_priv *priv){
 		  		      //not sure why he created his own array within the idle struct to store intel sleep states
 
 				        //this is wrong the states usage struct doesnt tell time in certain state
-				        struct cpuidle_state_usage *usage;
-				        usage = cpu_idle_dev->states_usage;
-				        c0 = usage->usage;
+				        //struct cpuidle_state_usage *usage;
+				        //usage = cpu_idle_dev->states_usage;
+				        //c0 = usage->usage;
 				        //c0 = cpu_idle_dev->states_usage[0];
 		  		      //c1 = cpu_idle_dev->states_usage[1];
 		  		      //c2 = cpu_idle_dev->states_usage[2]; 
 		  	      	//c3 = cpu_idle_dev->states_usage[3];
 					
-				        store_int64_asm(&(ile->Fields.c0), c0);
+				        //store_int64_asm(&(ile->Fields.c0), c0);
 		  		      //write_nti64_arm_test(&(ile->Fields.c0), c0); //these sleep states are not accurate to arm type
 		  		      //write_nti64_arm(&ile->Fields.c1, c1);
 			  	      //write_nti64_arm(&ile->Fields.c1e, c2);
