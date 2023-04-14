@@ -334,18 +334,6 @@ static inline void write_nti32_arm_test(void *p, const uint32_t v) {
                  : "memory");
 }
 
-
-
-/*
-static inline uint32_t get_instruction_count(void)
-{
-    uint32_t count;
-    __asm__ __volatile__("mrc p15, 0, %0, c9, c13, 0" : "=r" (count));
-    return count;
-}
-*/
-
-
 /*************************************************************************************************/
 /******************************** ALLOC / DEALLOC LOGS *******************************************/ 
 /*************************************************************************************************/ 
@@ -469,15 +457,11 @@ void record_log(struct mlx5e_priv *priv){
 	//get mlx5e_stats
 	struct mlx5e_stats stats = priv->stats;
 	struct mlx5e_sw_stats sw_stats = stats.sw; 
-//	u64 rx_bytes_get = sw_stats.rx_bytes; //this is not being reset
-//	u64 tx_bytes_get = sw_stats.tx_bytes;
 
 	//use clock to record time and cycs
 	struct mlx5_clock *clock = rq.clock;
 	
 	  int cpu = ch->cpu;
-	  //struct mlx5e_priv *priv = ch->priv; //from these two structs should be able to access all the stats and everything
-	  //struct mlx5_core_dev *mdev = ch->mdev; 
 
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
@@ -498,10 +482,6 @@ void record_log(struct mlx5e_priv *priv){
 		    // store_int32_asm(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
 		    // store_int32_asm(&(ile->Fields.rx_bytes), priv->pf_stats.rx_bytes);
 
-     		//write_nti64_arm_test(&(ile->Fields.tsc), now);
-     		//write_nti32_arm_test(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
-     		//write_nti32_arm_test(&(ile->Fields.rx_bytes), priv->pf_stats.rx_bytes);
-
      		//get last rdtsc
      		last = il->itr_joules_last_tsc;
         if((now - last) > tsc_per_milli)
@@ -511,7 +491,6 @@ void record_log(struct mlx5e_priv *priv){
 	     		  //first get the joules
 
 			      //store_int64_asm(&(ile->Fields.joules), energy);
-			      //write_nti64_arm_test(&(ile->Fields.joules), energy); 
 	     	       
      			  if(il->perf_started) 
 			      {
@@ -527,7 +506,6 @@ void record_log(struct mlx5e_priv *priv){
 		  		      //write_nti64_arm_test(&(ile->Fields.ncycles), num_ref_cycs);
 
 		  		      //need to include all the sleep states
-		  		      //not sure why he created his own array within the idle struct to store intel sleep states
 
 				        //this is wrong the states usage struct doesnt tell time in certain state
 				        //struct cpuidle_state_usage *usage;
@@ -537,13 +515,6 @@ void record_log(struct mlx5e_priv *priv){
 		  		      //c1 = cpu_idle_dev->states_usage[1];
 		  		      //c2 = cpu_idle_dev->states_usage[2]; 
 		  	      	//c3 = cpu_idle_dev->states_usage[3];
-					
-				        //store_int64_asm(&(ile->Fields.c0), c0);
-		  		      //write_nti64_arm_test(&(ile->Fields.c0), c0); //these sleep states are not accurate to arm type
-		  		      //write_nti64_arm(&ile->Fields.c1, c1);
-			  	      //write_nti64_arm(&ile->Fields.c1e, c2);
-		  		      //write_nti64_arm(&ile->Fields.c3, c3);
-
 		  		      //log hardware stats here
 		  		      // like c stats, cycles, LLCM, instructions
 		        }
