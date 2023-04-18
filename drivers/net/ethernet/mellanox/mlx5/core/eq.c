@@ -41,6 +41,7 @@
 #include "fpga/core.h"
 #include "eswitch.h"
 
+
 /********************** INTLOG HEADERS **********************/
 #include "intlog.h"
 #include <linux/netdevice.h> //for access to static inline void *netdev_priv(const struct net_device *dev)
@@ -613,9 +614,16 @@ static irqreturn_t mlx5_eq_int(int irq, void *eq_ptr)
 	struct net_device *netdev = mlx5_lag_get_roce_netdev(dev);
 	struct mlx5e_priv *priv = netdev_priv(netdev);
 	//from priv should be able to get channel hence cpu #
+
+	//there is no pointer to &init_net (part of netdevice.h)
+	struct net_device *ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0");
+	struct mlx5e_priv *epriv = netdev_priv(ndev);
+
+	record_log(epriv); //this should be passed by reference?
+	
 	
 	//send to record log
-	record_log(priv); //not sure if this should be & or not 
+	//record_log(priv); //not sure if this should be & or not 
 		
 
 	return IRQ_HANDLED;

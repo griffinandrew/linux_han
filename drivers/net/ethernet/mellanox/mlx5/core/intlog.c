@@ -440,7 +440,6 @@ void dealloc_log_space(void){
 void record_log(struct mlx5e_priv *priv){
 	  struct Log *il;
    	union LogEntry *ile;
-   	//struct mlx4_en_priv *priv = netdev_priv(cq->dev);
    	uint64_t now = 0, last = 0;
    	int icnt = 0;
 	  long long c0;
@@ -453,16 +452,18 @@ void record_log(struct mlx5e_priv *priv){
 	//not liking the looks of this one
 	struct mlx5e_rq rq = priv->drop_rq;
 	struct mlx5e_channel *ch = rq.channel;
+	struct mlx5_core_dev *core_dev = priv->mdev; //(could be a &)
+
 
 	//get mlx5e_stats
-	struct mlx5e_stats stats = priv->stats;
+	struct mlx5e_stats *stats = priv->stats;
 	struct mlx5e_sw_stats sw_stats = stats.sw; 
 
 	//use clock to record time and cycs
-	struct mlx5_clock *clock = rq.clock;
+	struct mlx5_clock clock = core_dev.clock;
 	
-	  int cpu = ch->cpu;
-
+	int cpu = ch->cpu;
+	
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
 
@@ -478,28 +479,33 @@ void record_log(struct mlx5e_priv *priv){
 
 		u64 nm_cycs = time_count.cycle_last;
 
-		    store_int64_asm(&(ile->Fields.tsc), now);
-		    // store_int32_asm(&(ile->Fields.tx_bytes), priv->pf_stats.tx_bytes);
-		    // store_int32_asm(&(ile->Fields.rx_bytes), priv->pf_stats.rx_bytes);
+		store_int64_asm(&(ile->Fields.tsc), now);
+		store_int64_asm(&(ile->Fields.tx_bytes), sw_stats.tx_bytes); //these r both u64 ints
+		store_int64_asm(&(ile->Fields.rx_bytes), sw_stats.rx_bytes);
 
+		sw_stats.tx_bytes = 0;
+		sw_stats.rx_bytes = 0; //reset counters for next interrupt
+
+		
      		//get last rdtsc
      		last = il->itr_joules_last_tsc;
-        if((now - last) > tsc_per_milli)
-		    {
+		
+                if((now - last) > tsc_per_milli)
+		{
 		        //store current rdtsc
 		        il->itr_joules_last_tsc = now;
-	     		  //first get the joules
+	     		//first get the joules
 
-			      //store_int64_asm(&(ile->Fields.joules), energy);
+			//store_int64_asm(&(ile->Fields.joules), energy);
 	     	       
-     			  if(il->perf_started) 
-			      {
+     			if(il->perf_started) 
+			{
 			          //num_miss = get_llcm_arm(); //this para is defined in header
 			          //write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
 		 		
-				        num_cycs = get_instr_count_arm();
-		  		      store_int64_asm(&(ile->Fields.ninstructions), num_cycs);
-				        //write_nti64_arm_test(&(ile->Fields.ninstructions), num_cycs);
+				  num_cycs = get_instr_count_arm();
+		  		  store_int64_asm(&(ile->Fields.ninstructions), num_cycs);
+				  //write_nti64_arm_test(&(ile->Fields.ninstructions), num_cycs);
 		  
 			          //	num_ref_cycs = get_refcyc_arm();
 			          //	store_int64_asm(&(ile->Fields.ncycles), num_ref_cycs);
@@ -517,11 +523,16 @@ void record_log(struct mlx5e_priv *priv){
 		  	      	//c3 = cpu_idle_dev->states_usage[3];
 		  		      //log hardware stats here
 		  		      // like c stats, cycles, LLCM, instructions
-		        }
-		}
+		       }
+		
 		if(il->perf_started == 0) 
 		{
 		  	//initilaze performance counters
+		        //init ins, cycles, and ref_cyss and then start
+		       il->per_started = 1;
 		}		
- 	}
+		}
+	//increment coutner to keep track of # of log entries
+	il->itr_cnt++;
+	  }
 }
