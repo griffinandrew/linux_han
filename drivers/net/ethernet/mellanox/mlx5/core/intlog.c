@@ -496,14 +496,14 @@ void dealloc_log_space(void){
 
 //for this driver there is nothing passed to irqreturn_t func that can be used to extract the core atm
 void record_log(struct mlx5e_priv *priv){
-	  struct Log *il;
+	struct Log *il;
    	union LogEntry *ile;
    	uint64_t now = 0, last = 0;
    	int icnt = 0;
-	long long c0, c1, c2;
-	  long long num_cycs;
-    //long long num_ref_cycs;
-    long long energy;
+	//long long c0, c1, c2;
+	long long num_cycs;
+        //long long num_ref_cycs;
+        //long long energy;
 	
    	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
    	
@@ -573,9 +573,9 @@ void record_log(struct mlx5e_priv *priv){
 
 				        //this is wrong the states usage struct doesnt tell time in certain state
 				        //struct cpuidle_state_usage *usage;
-				  c0 = pstate_1();
-				  c1 = pstate_2();
-				  c2 = pstate_3();
+				  //c0 = pstate_1();
+				  //c1 = pstate_2();
+				  //c2 = pstate_3();
 				  
 				  //usage = cpu_idle_dev->states_usage;
 			       	        //c0 = cpu_idle_dev->states_usage[0];
@@ -593,8 +593,8 @@ void record_log(struct mlx5e_priv *priv){
 		  enable_cpu_counters();
 		  il->perf_started = 1;
 		}		
-		}
+	 }
 	//increment coutner to keep track of # of log entries
 	il->itr_cnt++;
-	  }
+       }
 }
