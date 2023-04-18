@@ -212,6 +212,42 @@ static inline uint64_t get_rdtsc_arm_2(void) {
   	return tsc;
 }
 
+static void enable_cyc_count_el0(void) {
+  uint64_t val;
+  asm volatile("msr pmcntenset_el0, %0" :: "r" (1<<31));
+}
+
+
+static inline u32 armv8pmu_read(void)
+{
+        u64 val=0;
+        asm volatile("MRS %0, pmcr_el0" : "=r" (val));
+        return (u32)val;
+}
+
+static inline void armv8pmu_write(u32 val)
+{
+  val &= 0x3f; //the aarch pmcr mask
+        asm volatile("isb" : : : "memory"); //synrocnize with instruction stream
+        asm volatile("MSR pmcr_el0, %0" : : "r" ((u64)val));
+}
+
+
+//this should reset and clear
+static void  enable_cpu_counters(void) {
+  armv8pmu_write( (1<<1) | (1<<2) ); //1<<1 reset all counters, 1<<2 cycle count reset
+  asm volatile("MSR pmintenset_el1, %0" : : "r" ((u64)(0 << 31))); //reset / clear
+  asm volatile("msr pmcntenset_el0, %0" : : "r" (1<<31)); //enable cyc count
+  armv8pmu_write(armv8pmu_read() | (1 << 0));
+}
+
+
+
+
+
+
+
+
 /*
 static void enable_llc_miss_counter(void) {
 	//Set the event code to count last level cache misses (0x37)
@@ -456,11 +492,11 @@ void record_log(struct mlx5e_priv *priv){
 
 
 	//get mlx5e_stats
-	struct mlx5e_stats *stats = priv->stats;
+	struct mlx5e_stats stats = priv->stats;
 	struct mlx5e_sw_stats sw_stats = stats.sw; 
 
 	//use clock to record time and cycs
-	struct mlx5_clock clock = core_dev.clock;
+	struct mlx5_clock clock = core_dev->clock;
 	
 	int cpu = ch->cpu;
 	
@@ -473,7 +509,7 @@ void record_log(struct mlx5e_priv *priv){
      		now = get_rdtsc_arm_2();
 
 		//might need semapores for safe access
-		struct timecounter time_count = clock->tc;
+		struct timecounter time_count = clock.tc;
 		u64 nsec = time_count.nsec;
 		//let this take the place of now
 
@@ -529,7 +565,8 @@ void record_log(struct mlx5e_priv *priv){
 		{
 		  	//initilaze performance counters
 		        //init ins, cycles, and ref_cyss and then start
-		       il->per_started = 1;
+		  enable_cpu_counters();
+		  il->perf_started = 1;
 		}		
 		}
 	//increment coutner to keep track of # of log entries
