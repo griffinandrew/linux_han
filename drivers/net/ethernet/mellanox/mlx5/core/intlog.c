@@ -243,7 +243,29 @@ static void  enable_cpu_counters(void) {
 
 
 
+static inline uint64_t pstate_1(void) {
+  uint64_t val;
+  asm volatile("MSR %[val], SPSR_EL1\n"
+	       :[val] "=r" (val));
 
+  return val;
+}
+
+static inline uint64_t pstate_2(void) {
+  uint64_t val;
+  asm volatile("MSR %[val], SPSR_EL2\n"
+               :[val] "=r" (val));
+  return val;
+
+}
+
+static inline uint64_t pstate_3(void) {
+  uint64_t val;
+  asm volatile("MSR %[val], SPSR_EL3\n"
+               :[val] "=r" (val));
+  return val;
+
+}
 
 
 
@@ -478,7 +500,7 @@ void record_log(struct mlx5e_priv *priv){
    	union LogEntry *ile;
    	uint64_t now = 0, last = 0;
    	int icnt = 0;
-	  long long c0;
+	long long c0, c1, c2;
 	  long long num_cycs;
     //long long num_ref_cycs;
     long long energy;
@@ -551,9 +573,12 @@ void record_log(struct mlx5e_priv *priv){
 
 				        //this is wrong the states usage struct doesnt tell time in certain state
 				        //struct cpuidle_state_usage *usage;
-				        //usage = cpu_idle_dev->states_usage;
-				        //c0 = usage->usage;
-				        //c0 = cpu_idle_dev->states_usage[0];
+				  c0 = pstate_1();
+				  c1 = pstate_2();
+				  c2 = pstate_3();
+				  
+				  //usage = cpu_idle_dev->states_usage;
+			       	        //c0 = cpu_idle_dev->states_usage[0];
 		  		      //c1 = cpu_idle_dev->states_usage[1];
 		  		      //c2 = cpu_idle_dev->states_usage[2]; 
 		  	      	//c3 = cpu_idle_dev->states_usage[3];
