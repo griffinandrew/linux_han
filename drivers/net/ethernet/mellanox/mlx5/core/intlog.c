@@ -25,6 +25,7 @@
 #include "mlx5_core.h"
 #include "en.h"
 #include "intlog.h"
+#include <linux/timecounter.h>
 
 
 /*************************************************************************
