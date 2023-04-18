@@ -269,8 +269,8 @@ static inline uint64_t pstate_3(void) {
 
 
 
-
 /*
+
 static void enable_llc_miss_counter(void) {
 	//Set the event code to count last level cache misses (0x37)
 	uint32_t event = 0x37;
@@ -284,18 +284,18 @@ static void enable_llc_miss_counter(void) {
 	asm volatile("msr pmcntenset_el0, %0" :: "r"(val)); //i might be overwriting a different counter i use
 }
 
-
+*/
 
 //THIS IS incorrect, first this counter must be inited
 //get last level cache miss arm
 //llc using rdmsr command
-inline uint64_t get_llcm_arm(void){
+static inline uint64_t get_llcm_arm(void){
 	uint64_t val;
   	uint32_t event = 0x37; //check this
   	asm volatile("msr %0, PMEVCNTR0_EL0" : "=r" (val) : "I" (event)); //there r 5 cntrs need to choose which one to enable (probs in open / alloc funcation)
   	return val;
 }
-*/
+
 //gets the current instruction count
 static inline long long get_cyc_count_arm(void){
 	long long val;
@@ -504,7 +504,7 @@ void record_log(struct mlx5e_priv *priv){
 	long long num_cycs;
         //long long num_ref_cycs;
         //long long energy;
-	
+	long long num_miss;
    	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
    	
 	//not liking the looks of this one
@@ -558,7 +558,7 @@ void record_log(struct mlx5e_priv *priv){
 	     	       
      			if(il->perf_started) 
 			{
-			          //num_miss = get_llcm_arm(); //this para is defined in header
+			  //num_miss = get_llcm_arm(); //this para is defined in header
 			          //write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
 		 		
 				  num_cycs = get_instr_count_arm();
