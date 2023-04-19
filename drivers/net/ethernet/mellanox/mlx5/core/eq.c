@@ -611,22 +611,18 @@ static irqreturn_t mlx5_eq_int(int irq, void *eq_ptr)
 		tasklet_schedule(&eq->tasklet_ctx.task);
 
 	/**************** INTLOG **************************/
-	struct net_device *netdev = mlx5_lag_get_roce_netdev(dev);
-	struct mlx5e_priv *priv = netdev_priv(netdev);
+	//struct net_device *netdev = mlx5_lag_get_roce_netdev(dev);
+	//struct mlx5e_priv *priv = netdev_priv(netdev);
 	//from priv should be able to get channel hence cpu #
 
 	//there is no pointer to &init_net (part of netdevice.h)
+	//it actually is a global pointer and this should actually work here
 	struct net_device *ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0");
 	struct mlx5e_priv *epriv = netdev_priv(ndev);
 
 	record_log(epriv); //this should be passed by reference?
-	
-	
-	//send to record log
-	//record_log(priv); //not sure if this should be & or not 
 		
-
-	return IRQ_HANDLED;
+        IRQ_HANDLED;
 }
 
 /* Some architectures don't latch interrupts when they are disabled, so using
