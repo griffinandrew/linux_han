@@ -55,7 +55,7 @@ struct Log {
   u32 itr_cookie;
   u32 non_itr_cnt;   
   u32 itr_cnt;                // this keeps track of number of LogEntry in *log
-  u32 perf_started;    
+  u32 perf_started;
 } __attribute__((packed, aligned(CACHE_LINE_SIZE)));
 
 extern struct Log logs[NUM_CORES]; //for the 80 cores

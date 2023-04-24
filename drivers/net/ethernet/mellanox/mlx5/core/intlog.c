@@ -488,7 +488,31 @@ void dealloc_log_space(void){
         }                                                                                                                                                                                                                         
 }    
 
+/*************************************************************************************************/
+/********************************* RECORD per irq info *******************************************/
+/*************************************************************************************************/
 
+/*
+void record_tx_poll_info(struct mlx5e_cq *cq, u64 npkts) {
+	struct Log *il;
+	struct mlx5e_channel *ch = cq->channel;
+	int cpu = ch->cpu;
+	il = &logs[cpu];
+	il->per_itr_tx_packets += npkts;
+}
+
+void record_rx_poll_info(struct mlx5e_cq *cq, u64 npkts) {
+	struct Log *il;
+        struct mlx5e_channel *ch = cq->channel;
+        int cpu = ch->cpu;
+        il = &logs[cpu];
+        il->per_itr_rx_packets += npkts;
+}
+
+
+*/
+//I don't think this function is necessary
+//espcailly if i am taking packets to be descriptors, just use sw_stats, why not?
 
 /*************************************************************************************************/
 /********************************* RECORD LOG ***************************************************/
@@ -522,7 +546,10 @@ void record_log(struct mlx5e_priv *priv){
 	struct mlx5_clock clock = core_dev->clock;
 	
 	int cpu = ch->cpu;
-	
+
+	//alternative way to get cpu #
+        //int current_cpu = smp_processor_id(); // might be easier? but still need priv to get stats
+
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
 
@@ -537,13 +564,20 @@ void record_log(struct mlx5e_priv *priv){
 		//let this take the place of now
 
 		u64 nm_cycs = time_count.cycle_last;
-
+		
+		//possibly when initilizing these feilds need to zero 
 		store_int64_asm(&(ile->Fields.tsc), now);
 		store_int64_asm(&(ile->Fields.tx_bytes), sw_stats.tx_bytes); //these r both u64 ints
 		store_int64_asm(&(ile->Fields.rx_bytes), sw_stats.rx_bytes);
+		store_int64_asm(&(ile->Fields.tx_desc), sw_stats.tx_packets);
+		store_int64_asm(&(ile->Fields.rx_desc), sw_stats.rx_packets);
+
 
 		sw_stats.tx_bytes = 0;
 		sw_stats.rx_bytes = 0; //reset counters for next interrupt
+		
+		sw_stats.tx_packets = 0;
+		sw_stats.rx_packets = 0; 
 
 		
      		//get last rdtsc
