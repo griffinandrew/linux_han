@@ -444,7 +444,7 @@ void dealloc_log_space(void){
 //without for 
 
 // allocates memory for creation of log                                                                                                                                                                                            
-int alloc_log_space(void) {                                                                                                                                                                                                        
+int alloc_log_space(struct mlx5e_priv *priv) {                                                                                                                                                                                                        
 	int flag = 0;
 	int i = 0;
         uint64_t now;                                                                                                                                                                                                                    
@@ -466,13 +466,28 @@ int alloc_log_space(void) {
 		         logs[i].non_itr_cnt = 0;                                                                                                                                                                                                        
 		         logs[i].itr_cnt = 0;                                                                                                                                                                                                            
 		         logs[i].perf_started = 0;
-	            i++;
-        }                            
-	      tsc_per_milli = tsc_khz;       
-	      now = get_rdtsc_arm();           
-	      store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
-	      printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
-	      return flag;
+	
+			 i++;
+
+        }
+
+	/*************** clear sw_stats *****************/
+	struct mlx5e_stats stats = priv->stats;
+	struct mlx5e_sw_stats sw_stats= stats.sw;
+	//one of these should be a pointer 
+
+	//reset
+	sw_stats.tx_bytes = 0;
+	sw_stats.rx_bytes = 0;
+	sw_stats.tx_packets = 0; 
+	sw_stats.rx_packets = 0;
+	
+
+	tsc_per_milli = tsc_khz;       
+	now = get_rdtsc_arm_2();//possible func to get rdtsc            
+	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
+	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
+	return flag;
 }                                                                                                                                                                                                                                  
                                                                                                                                                                                                                                    
                                                                                                                                                                                                                                    
@@ -481,9 +496,9 @@ void dealloc_log_space(void){
 	int i = 0;
         while(i < NUM_CORES)
         {                                                                                                                                                                                        
-	      if(logs[i].log){    
-		          vfree(logs[i].log); 
-         }                                                                                                                                                                                                                                 
+	        if(logs[i].log){    
+			vfree(logs[i].log); 
+        	}                                                                                                                                                                                                                                 
 	       i++;
         }                                                                                                                                                                                                                         
 }    
