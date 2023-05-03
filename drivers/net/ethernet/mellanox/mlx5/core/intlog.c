@@ -503,6 +503,23 @@ void dealloc_log_space(void){
         }                                                                                                                                                                                                                         
 }    
 
+
+void cpu_idle_states(void) {
+	struct cpuidle_device *dev = __this_cpu_read(cpuidle_device);
+	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+
+	//printbstates
+	int i;
+	printk(KERN_INFO "cpuidle stats state_count=%d\n", drv->state_count);
+	for(i=0;i<drv->state_count;i++) {
+	  printk(KERN_INFO "i=%d name=%s exit_latency=%u target_residency=%u power_usage_mW=%i\n",
+		 i, drv->states[i].name,
+		 drv->states[i].exit_latency, drv->states[i].target_residency, drv->states[i].power_usage);
+	}
+
+}
+
+
 /*************************************************************************************************/
 /********************************* RECORD per irq info *******************************************/
 /*************************************************************************************************/
@@ -545,8 +562,10 @@ void record_log(struct mlx5e_priv *priv){
         //long long num_ref_cycs;
         //long long energy;
 	long long num_miss;
-   	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
-   	
+   	struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
+	//struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+	int power_usage;
+	int cpu_num;
 	//not liking the looks of this one
 	struct mlx5e_rq rq = priv->drop_rq;
 	struct mlx5e_channel *ch = rq.channel;

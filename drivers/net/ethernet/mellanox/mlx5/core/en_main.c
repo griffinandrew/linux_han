@@ -2932,7 +2932,7 @@ int mlx5e_open_locked(struct net_device *netdev)
 	/******************************** INTLOG INIT*********************************/
 	//allocate the appropraite memory for the logs when opening the device
 
-	flag = alloc_log_space(&priv); //pass priv to alloc to reset all sw stats?
+	flag = alloc_log_space(priv); //pass priv to alloc to reset all sw stats?
 	if(flag)
 	  printk(KERN_INFO "Failed to alloc log space");
 	else

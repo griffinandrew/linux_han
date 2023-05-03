@@ -560,7 +560,7 @@ bool mlx5e_poll_tx_cq(struct mlx5e_cq *cq, int napi_budget)
 
 	//IntLog: record number of packets and number of bytes
 	//im not sure if this is needed besides getting the number of descriptor 
-	record_tx_poll_info(&cq, npkts); //this assumes that the number of descriptors is the number of packets 
+	//record_tx_poll_info(&cq, npkts); //this assumes that the number of descriptors is the number of packets 
 	
 	/* ensure cq space is freed before enabling more cqes */
 	wmb();
