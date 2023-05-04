@@ -1688,7 +1688,11 @@ static int __init init(void)
 	err = pci_register_driver(&mlx5_core_driver);
 	if (err)
 		goto err_debug;
+	//********************** intlog init ******************************
+	/****************** create proc/stats/core/N*********************/
+	create_dir();
 
+	
 #ifdef CONFIG_MLX5_CORE_EN
 	mlx5e_init();
 #endif
@@ -1702,6 +1706,8 @@ err_debug:
 
 static void __exit cleanup(void)
 {
+  /***************** intlog del dir ************************/
+       remove_dir();
 #ifdef CONFIG_MLX5_CORE_EN
 	mlx5e_cleanup();
 #endif

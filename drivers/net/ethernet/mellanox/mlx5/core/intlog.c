@@ -634,8 +634,8 @@ void record_log(struct mlx5e_priv *priv){
 		  		  store_int64_asm(&(ile->Fields.ninstructions), num_cycs);
 				  //write_nti64_arm_test(&(ile->Fields.ninstructions), num_cycs);
 		  
-			          //	num_ref_cycs = get_refcyc_arm();
-			          //	store_int64_asm(&(ile->Fields.ncycles), num_ref_cycs);
+			          num_ref_cycs = get_refcyc_arm();
+			          store_int64_asm(&(ile->Fields.ncycles), num_ref_cycs);
 		  		      //write_nti64_arm_test(&(ile->Fields.ncycles), num_ref_cycs);
 
 		  		      //need to include all the sleep states
@@ -667,3 +667,37 @@ void record_log(struct mlx5e_priv *priv){
 	il->itr_cnt++;
        }
 }
+
+
+/******************************************* create dir /proc/arm_stats/core/N **************************************/
+
+
+void create_dir(void) {
+	stats_dir = proc_mkdir("arm_stats", NULL);
+	if(!stats_dir) {
+		printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/\n");
+		return -ENOMEM;
+	}
+	stats_core_dir = proc_mkdir("core", stats_dir);
+	if(!stats_core_dir) {
+		printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/core/\n");
+		return -ENOMEM;
+	}
+	for(i=0; i<NUM_CORES; i++) {
+		char name [4]; //not sure why size 5
+       		sprintf(name, "%ld", i);
+ 		if(!proc_create_data(name, 0444, stats_core_dir, &ct_file_ops_intlog, (void *)i)) {
+			printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/core/%ld\n", i);
+		}
+	}
+	printk(KERN_INFO "Successfully loaded /proc/arm_stats/\n");	
+
+}
+
+
+
+
+void remove_dir(void) {
+	remove_proc_subtree("arm_stats", NULL);
+}
+
