@@ -49,7 +49,7 @@ struct Log logs[NUM_CORES];
 //struct mlx4_en_cq *cq;
 
 ////////////////////////////////////////////////////////////////
-struct proc_dir_entry *stats_dir;  //these were extern
+struct proc_dir_entry *stats_dir;
 struct proc_dir_entry *stats_core_dir;
 ////////////////////////////////////////////////////////////////
 
@@ -233,7 +233,7 @@ static inline u32 armv8pmu_read(void)
 
 static inline void armv8pmu_write(u32 val)
 {
-  val &= 0x3f; //the aarch pmcr mask
+        val &= 0x3f; //the aarch pmcr mask
         asm volatile("isb" : : : "memory"); //synrocnize with instruction stream
         asm volatile("MSR pmcr_el0, %0" : : "r" ((u64)val));
 }
@@ -246,6 +246,41 @@ static void  enable_cpu_counters(void) {
   asm volatile("msr pmcntenset_el0, %0" : : "r" (1<<31)); //enable cyc count
   armv8pmu_write(armv8pmu_read() | (1 << 0));
 }
+
+
+
+static inline void configure_pmu(void) {
+    // Enable the PMU and all counters
+    uint64_t pmcr_val;
+    asm volatile("mrs %0, PMCR_EL0" : "=r" (pmcr_val));
+    
+    //this val is likely incorrect
+    pmcr_val |= (0x7 << 11) | (1 << 9) | (1 << 0); // Enable all counters and cycle counter
+    
+    asm volatile("msr PMCR_EL0, %0" : : "r" (pmcr_val));
+
+    // Set event codes for LLC misses, cycle count, and instruction count
+    uint32_t llc_misses_event = 0x37;
+    uint32_t cycle_count_event = 0x11;
+    uint32_t instruction_count_event = 0x08;
+    asm volatile("msr PMSELR_EL0, %0" : : "r" (0x0)); // Select counter 0
+    asm volatile("msr PMXEVTYPER_EL0, %0" : : "r" (llc_misses_event)); // Set event code for LLC misses
+    asm volatile("msr PMSELR_EL0, %0" : : "r" (1)); // Select counter 1
+    asm volatile("msr PMXEVTYPER_EL0, %0" : : "r" (cycle_count_event)); // Set event code for cycle count
+    asm volatile("msr PMSELR_EL0, %0" : : "r" (2)); // Select counter 2
+    asm volatile("msr PMXEVTYPER_EL0, %0" : : "r" (instruction_count_event)); // Set event code for instruction count
+
+    // Clear and enable the counters
+    uint64_t pmcntenset_val;
+    asm volatile("mrs %0, PMCNTENSET_EL0" : "=r" (pmcntenset_val));
+    pmcntenset_val |= (0x7 << 0); // Enable all counters
+    asm volatile("msr PMCNTENSET_EL0, %0" : : "r" (pmcntenset_val));
+    asm volatile("msr PMCCNTR_EL0, %0" : : "r" (0)); // Clear cycle counter
+    asm volatile("msr PMXEVCNTR_EL0, %0" : : "r" (0)); // Clear LLC misses counter
+    asm volatile("isb"); // Ensure that all PMU configuration changes have completed
+}
+
+
 
 
 /*
@@ -299,11 +334,14 @@ static void enable_llc_miss_counter(void) {
 //llc using rdmsr command
 static inline uint64_t get_llcm_arm(void){
 	uint64_t val;
-  	uint32_t event = 0x37; //check this
-  	asm volatile("msr %0, PMEVCNTR0_EL0" : "=r" (val) : "I" (event)); //there r 5 cntrs need to choose which one to enable (probs in open / alloc funcation)
+  	//uint32_t event = 0x37; //check this
+  	asm volatile("msr %0, PMEVCNTR0_EL0" : "=r" (val));
+    	// : "I" (event)); //there r 5 cntrs need to choose which one to enable (probs in open / alloc funcation)
   	return val;
 }
 
+
+/*
 //gets the current instruction count
 static inline long long get_cyc_count_arm(void){
 	long long val;
@@ -312,6 +350,7 @@ static inline long long get_cyc_count_arm(void){
   	return val;
 }
 
+*/
 
 //gets the number of ref cycles (phyiscal count register)
 static inline long long get_refcyc_arm(void){
@@ -325,6 +364,26 @@ static inline long long get_instr_count_arm(void){
 	long long val;
   	asm volatile("mrs %0, PMEVCNTR0_EL0" : "=r"(val));
   	return val;
+}
+
+
+
+static inline void read_counters_arm(uint64_t* values) {
+    // Read the current values of the counters
+    uint64_t pmccntr_val, pmxevcntr0_val, pmxevcntr1_val, pmxevcntr2_val;
+    asm volatile("mrs %0, PMCCNTR_EL0" : "=r" (pmccntr_val)); // Read cycle counter
+    asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (pmxevcntr0_val)); // Read LLC misses counter
+    asm volatile("msr PMSELR_EL0, %0" : : "r" (1)); // Select counter 1
+    asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (pmxevcntr1_val)); // Read cycle count counter
+    asm volatile("msr PMSELR_EL0, %0" : : "r" (2)); // Select counter 2
+    asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (pmxevcntr2_val)); // Read instruction count counter
+
+    // Store the counter values in the output array
+    //Note: getting both cycle count from reg and also counter, only need 1 tho i think counter bc will tell from when pmu is enabled 
+    values[0] = pmccntr_val;
+    values[1] = pmxevcntr0_val;
+    values[2] = pmxevcntr1_val;
+    values[3] = pmxevcntr2_val;
 }
 
 
@@ -484,14 +543,9 @@ int alloc_log_space(struct mlx5e_priv *priv) {
 		         {                     
 			       printk(KERN_INFO "Fail to vmalloc logs[%d]->log\n", i);  
 			       flag = 1;                                                                                                                                     
-		         }                                                                                                                                                                                                                              
-		         logs[i].itr_joules_last_tsc = 0;                                                                                                                                                                                              
-		         logs[i].msix_other_cnt = 0;                                                                                                                                                                                                    
-		         logs[i].itr_cookie = 0;                                                                                                                                                                                                           
-		         logs[i].non_itr_cnt = 0;                                                                                                                                                                                                        
-		         logs[i].itr_cnt = 0;                                                                                                                                                                                                            
-		         logs[i].perf_started = 0;
-	
+		         }                                                                                                                                                                                           		              logs[i].itr_joules_last_tsc = 0;                                                                                                                                                                                    logs[i].msix_other_cnt = 0;                                                                                                                                                                                        logs[i].itr_cookie = 0;
+			 logs[i].non_itr_cnt = 0;
+			 logs[i].itr_cnt = 0;                                                                                                                                                                                                logs[i].perf_started = 0;
 			 i++;
 
         }
@@ -568,11 +622,14 @@ void record_log(struct mlx5e_priv *priv){
    	union LogEntry *ile;
    	uint64_t now = 0, last = 0;
    	int icnt = 0;
+	uint64_t counters[4];
+
 	//long long c0, c1, c2;
-	long long num_cycs;
-        long long num_ref_cycs;
+	//long long num_cycs;
+	//long long n_instr;
+        //long long num_ref_cycs;
         //long long energy;
-	long long num_miss;
+	//long long num_miss;
 	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
 	//struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
         //int power_usage;
@@ -638,31 +695,29 @@ void record_log(struct mlx5e_priv *priv){
 	     	       
      			if(il->perf_started) 
 			{
-			          num_miss = get_llcm_arm(); //this para is defined in header
-			          store_int64_asm(&(ile->Fields.nllc_miss), num_cycs);
+				  read_counters_arm(counters);
+
+			          //num_miss = get_llcm_arm(); //this para is defined in header
+			          store_int64_asm(&(ile->Fields.nllc_miss), counters[1]);
 				  //write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
 		 		
-				  num_cycs = get_instr_count_arm();
-		  		  store_int64_asm(&(ile->Fields.ninstructions), num_cycs);
+				  //num_cycs = get_instr_count_arm();
+		  		  store_int64_asm(&(ile->Fields.ncycles), counters[2]);
 				  //write_nti64_arm_test(&(ile->Fields.ninstructions), num_cycs);
-		  
-			          num_ref_cycs = get_refcyc_arm();
-			          store_int64_asm(&(ile->Fields.ncycles), num_ref_cycs);
+		                  
+			          store_int64_asm(&(ile->Fields.ninstructions), counters[3]);
+
+			          //num_ref_cycs = get_refcyc_arm();
+			          //store_int64_asm(&(ile->Fields.ncycles), num_ref_cycs);
 		  		      //write_nti64_arm_test(&(ile->Fields.ncycles), num_ref_cycs);
 
 		  		      //need to include all the sleep states
 
-				        //this is wrong the states usage struct doesnt tell time in certain state
-				        //struct cpuidle_state_usage *usage;
-				  //c0 = pstate_1();
-				  //c1 = pstate_2();
-				  //c2 = pstate_3();
-				  
 				  //usage = cpu_idle_dev->states_usage;
 			       	        //c0 = cpu_idle_dev->states_usage[0];
 		  		      //c1 = cpu_idle_dev->states_usage[1];
 		  		      //c2 = cpu_idle_dev->states_usage[2]; 
-		  	      	//c3 = cpu_idle_dev->states_usage[3];
+		  	      	      //c3 = cpu_idle_dev->states_usage[3];
 		  		      //log hardware stats here
 		  		      // like c stats, cycles, LLCM, instructions
 		       }
@@ -671,8 +726,9 @@ void record_log(struct mlx5e_priv *priv){
 		{
 		  	//initilaze performance counters
 		        //init ins, cycles, and ref_cyss and then start
-		  enable_cpu_counters();
-		  il->perf_started = 1;
+		        // enable_cpu_counters();
+		        configure_pmu();
+			il->perf_started = 1;
 		}		
 	 }
 	//increment coutner to keep track of # of log entries
