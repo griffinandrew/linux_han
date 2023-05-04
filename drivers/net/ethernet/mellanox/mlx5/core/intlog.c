@@ -181,21 +181,19 @@ inline uint64_t get_rdtsc_intel(void){
 
 
 //possibly arm implementation for retreiving tsc
-static inline uint64_t get_rdtsc_arm(void){
+//this gets the physical timer val not the virtual
+static inline uint64_t get_rdtsc_arm_phys(void){
 	uint64_t tsc;
-	asm volatile("mrs %0, cntvct_el0" : "=r" (tsc));
+	asm volatile("mrs %0, CNTP_TVAL" : "=r" (tsc));
   	return tsc;
 }
 
 
 //other possible implementaion to get timestamp
-//this is wrong
-static inline uint64_t get_rdtsc_arm_2(void) {
+//gets virtual timer
+static inline uint64_t get_rdtsc_arm_vir(void) {
 	uint64_t tsc;
- 	asm volatile("mrs %[tsc], cntvct_el0\n"
-	       	     :[tsc] "=r" (tsc)
-	       	     :
-	       	     :"memory");
+	asm volatile("mrs %0, CNTV_TVAL" : "=r" (tsc));
   	return tsc;
 }
 
@@ -218,7 +216,7 @@ static inline uint32_t armv8pmu_read(void)
 
 static inline void armv8pmu_write(uint32_t val)
 {
-    val &= 0x3f; //the aarch pmcr mask
+	val &= 0x3f; //the aarch pmcr mask
     asm volatile("isb" : : : "memory"); //synrocnize with instruction stream
 	asm volatile("MSR pmcr_el0, %0" : : "r" ((uint64_t)val));
 }
@@ -540,7 +538,7 @@ int alloc_log_space(struct mlx5e_priv *priv) {
 	sw_stats.rx_packets = 0;
 
 	tsc_per_milli = tsc_khz;       
-	now = get_rdtsc_arm_2();//possible func to get rdtsc            
+	now = get_rdtsc_arm_phys();//possible func to get rdtsc            
 	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
 	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
 	//use cpu idle fun c to dipsplay idle states and stats
@@ -633,7 +631,7 @@ void record_log(struct mlx5e_priv *priv){
    	if(icnt < LOG_SIZE) 
 	{ 
      	ile = &il->log[icnt];
-     	now = get_rdtsc_arm_2();
+     	now = get_rdtsc_arm_phys();
 
 		//might need semapores for safe access
 		struct timecounter time_count = clock.tc;
