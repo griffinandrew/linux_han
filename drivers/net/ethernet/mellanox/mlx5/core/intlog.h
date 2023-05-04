@@ -84,3 +84,9 @@ void dealloc_log_space(void);
 
 // ************************** RECORD LOG ********************************
 void record_log(struct mlx5e_priv *priv);
+
+
+// *********************** CREATE / REMOVE PROCS_DIR ***********************
+void remove_dir(void);
+
+void create_dir(void);

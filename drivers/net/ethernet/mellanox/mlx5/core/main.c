@@ -63,6 +63,9 @@
 #include "accel/tls.h"
 #include "lib/clock.h"
 
+/************** INTLOG HEADER ****************/
+#include "intlog.h"
+
 MODULE_AUTHOR("Eli Cohen <eli@mellanox.com>");
 MODULE_DESCRIPTION("Mellanox Connect-IB, ConnectX-4 core driver");
 MODULE_LICENSE("Dual BSD/GPL");
