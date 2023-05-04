@@ -60,99 +60,83 @@ struct proc_dir_entry *stats_core_dir;
 
 void *ct_start(struct seq_file *s, loff_t *pos)
 {
-  loff_t *spos;
-  struct Log *il;
-  unsigned long id = (unsigned long)s->private;
+	loff_t *spos;
+  	struct Log *il;
+  	unsigned long id = (unsigned long)s->private;
 
-  // id maps to the specific core
-  il= &logs[id];  
+  	// id maps to the specific core
+  	il= &logs[id];  
 
-  // clear out the entries in all the logs
-  spos = kmalloc(sizeof(loff_t), GFP_KERNEL);
-  if (!spos || (unsigned int)(*pos) >= (unsigned int)(il->itr_cnt)) {
-    memset(logs[id].log, 0, (sizeof(union LogEntry) *  LOG_SIZE));
-    logs[id].itr_joules_last_tsc = 0;
-    logs[id].msix_other_cnt = 0; //there is no msix here? 
-    logs[id].itr_cookie = 0;
-    logs[id].non_itr_cnt = 0;
-    logs[id].itr_cnt = 0;
-    logs[id].perf_started = 0;    
-    return NULL;
-  }
-  *spos = *pos;
-  return spos;
+  	// clear out the entries in all the logs
+  	spos = kmalloc(sizeof(loff_t), GFP_KERNEL);
+  	if (!spos || (unsigned int)(*pos) >= (unsigned int)(il->itr_cnt)) {
+    	memset(logs[id].log, 0, (sizeof(union LogEntry) *  LOG_SIZE));
+    	logs[id].itr_joules_last_tsc = 0;
+    	logs[id].msix_other_cnt = 0; //there is no msix here? 
+    	logs[id].itr_cookie = 0;
+    	logs[id].non_itr_cnt = 0;
+    	logs[id].itr_cnt = 0;
+    	logs[id].perf_started = 0;    
+    	return NULL;
+  	}
+  	*spos = *pos;
+  	return spos;
 }
 
 // this gets called automatically as part of ct_show
 void *ct_next(struct seq_file *s, void *v, loff_t *pos)
 {
-  loff_t *spos;
-  unsigned long id = (unsigned long)s->private;
-  struct Log *il;
-  il= &logs[id];
+  	loff_t *spos;
+  	unsigned long id = (unsigned long)s->private;
+  	struct Log *il;
+  	il= &logs[id];
   
-  spos = v;
-  // to check we aren't printing a log entry beyond itr_cnt
-  if((unsigned int)(*pos) >= (unsigned int)(il->itr_cnt))
-    return NULL;
+  	spos = v;
+  	// to check we aren't printing a log entry beyond itr_cnt
+  	if((unsigned int)(*pos) >= (unsigned int)(il->itr_cnt))
+    	return NULL;
 
-  // increment to next log entry
-  *pos = ++*spos;
+  	// increment to next log entry
+  	*pos = ++*spos;
   
-  return spos;
+  	return spos;
 }
 
 /* Return 0 means success, SEQ_SKIP ignores previous prints, negative for error. */
 int ct_show(struct seq_file *s, void *v)
 {
-  loff_t *spos;
-  unsigned long id = (unsigned long)s->private; // get the core id
-  struct Log *il;
-  union LogEntry *ile;
+  	loff_t *spos;
+  	unsigned long id = (unsigned long)s->private; // get the core id
+  	struct Log *il;
+  	union LogEntry *ile;
   
-  spos = v;  
-  il= &logs[id]; // for the core
-  ile = &il->log[(int)*spos]; // for the specific log entry in each core
+  	spos = v;  
+  	il= &logs[id]; // for the core
+  	ile = &il->log[(int)*spos]; // for the specific log entry in each core
 
-  // write to entry in procfs
-  if(ile->Fields.tsc != 0) {
-    seq_printf(s, "%u %u %u %u %u %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu\n",
-	       (unsigned int)*spos,
-	       ile->Fields.rx_desc, ile->Fields.rx_bytes,
-	       ile->Fields.tx_desc, ile->Fields.tx_bytes,
-	       ile->Fields.ninstructions,
-	       ile->Fields.ncycles,
-	       ile->Fields.nref_cycles,
-	       ile->Fields.nllc_miss,
-	       ile->Fields.c0,
-	       ile->Fields.c1,
-	       ile->Fields.c1e,
-	       ile->Fields.c3,
-	       ile->Fields.c6,
-	       ile->Fields.c7,
-	       ile->Fields.joules,
-	       ile->Fields.tsc);
-  }
-
-  return 0;
+  	// write to entry in procfs
+  	if(ile->Fields.tsc != 0) {
+    	seq_printf(s, "%u %u %u %u %u %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu\n", (unsigned int)*spos, ile->Fields.rx_desc, ile->Fields.rx_bytes, ile->Fields.tx_desc, ile->Fields.tx_bytes, ile->Fields.ninstructions, ile->Fields.ncycles, ile->Fields.nref_cycles, ile->Fields.nllc_miss, ile->Fields.c0, ile->Fields.c1, ile->Fields.c1e, ile->Fields.c3, ile->Fields.c6, ile->Fields.c7, ile->Fields.joules,ile->Fields.tsc);
+  	}
+  	return 0;
 }
 
 void ct_stop(struct seq_file *s, void *v)
 {
-  kfree(v);  
+  	kfree(v);  
 }
 
 int ct_open(struct inode *inode, struct file *file)
 {
-  int ret;
+  	int ret;
   
-  ret = seq_open(file, &my_seq_ops_intlog);
-  if(ret == 0) {
-  	struct seq_file *m = file->private_data;
-	m->private = PDE_DATA(inode);
-  }
+  	ret = seq_open(file, &my_seq_ops_intlog);
+  	if(ret == 0) {
+  		struct seq_file *m = file->private_data;
+		m->private = PDE_DATA(inode);
+  	}
   
-  return ret; 
+  	return ret; 
 }
 
 /*************************************************************************************************/
@@ -161,19 +145,19 @@ int ct_open(struct inode *inode, struct file *file)
 
 const struct file_operations ct_file_ops_intlog =
 {
- .owner   = THIS_MODULE,
- .open    = ct_open,
- .read    = seq_read,
- .llseek  = seq_lseek,
- .release = seq_release
+	.owner   = THIS_MODULE,
+	.open    = ct_open,
+ 	.read    = seq_read,
+ 	.llseek  = seq_lseek,
+ 	.release = seq_release
 };
 
 struct seq_operations my_seq_ops_intlog =
 {
- .next  = ct_next,
- .show  = ct_show,
- .start = ct_start,
- .stop  = ct_stop,
+ 	.next  = ct_next,
+ 	.show  = ct_show,
+ 	.start = ct_start,
+ 	.stop  = ct_stop,
 };
 
 /*************************************************************************************************/
@@ -205,6 +189,7 @@ static inline uint64_t get_rdtsc_arm(void){
 
 
 //other possible implementaion to get timestamp
+//this is wrong
 static inline uint64_t get_rdtsc_arm_2(void) {
 	uint64_t tsc;
  	asm volatile("mrs %[tsc], cntvct_el0\n"
@@ -224,27 +209,27 @@ static void enable_cyc_count_el0(void) {
 }
 
 */
-static inline u32 armv8pmu_read(void)
+static inline uint32_t armv8pmu_read(void)
 {
-        u64 val=0;
-        asm volatile("MRS %0, pmcr_el0" : "=r" (val));
-        return (u32)val;
+    uint64_t val=0;
+    asm volatile("MRS %0, pmcr_el0" : "=r" (val));
+    return (uint32_t)val;
 }
 
-static inline void armv8pmu_write(u32 val)
+static inline void armv8pmu_write(uint32_t val)
 {
-        val &= 0x3f; //the aarch pmcr mask
-        asm volatile("isb" : : : "memory"); //synrocnize with instruction stream
-        asm volatile("MSR pmcr_el0, %0" : : "r" ((u64)val));
+    val &= 0x3f; //the aarch pmcr mask
+    asm volatile("isb" : : : "memory"); //synrocnize with instruction stream
+	asm volatile("MSR pmcr_el0, %0" : : "r" ((uint64_t)val));
 }
 
 
 //this should reset and clear
 static void  enable_cpu_counters(void) {
-  armv8pmu_write( (1<<1) | (1<<2) ); //1<<1 reset all counters, 1<<2 cycle count reset
-  asm volatile("MSR pmintenset_el1, %0" : : "r" ((u64)(0 << 31))); //reset / clear
-  asm volatile("msr pmcntenset_el0, %0" : : "r" (1<<31)); //enable cyc count
-  armv8pmu_write(armv8pmu_read() | (1 << 0));
+	armv8pmu_write( (1<<1) | (1<<2) ); //1<<1 reset all counters, 1<<2 cycle count reset
+  	asm volatile("MSR pmintenset_el1, %0" : : "r" ((u64)(0 << 31))); //reset / clear
+  	asm volatile("msr pmcntenset_el0, %0" : : "r" (1<<31)); //enable cyc count
+  	armv8pmu_write(armv8pmu_read() | (1 << 0));
 }
 
 
@@ -335,8 +320,7 @@ static void enable_llc_miss_counter(void) {
 static inline uint64_t get_llcm_arm(void){
 	uint64_t val;
   	//uint32_t event = 0x37; //check this
-  	asm volatile("msr %0, PMEVCNTR0_EL0" : "=r" (val));
-    	// : "I" (event)); //there r 5 cntrs need to choose which one to enable (probs in open / alloc funcation)
+  	asm volatile("msr %0, PMEVCNTR0_EL0" : "=r" (val)); // : "I" (event)); //there r 5 cntrs need to choose which one to enable (probs in open / alloc funcation)
   	return val;
 }
 
@@ -346,7 +330,7 @@ static inline uint64_t get_llcm_arm(void){
 static inline long long get_cyc_count_arm(void){
 	long long val;
 	asm volatile("msr %0, PMCCNTR_EL0"
-		     : "=r" (val));
+		         : "=r" (val));
   	return val;
 }
 
@@ -370,7 +354,7 @@ static inline long long get_instr_count_arm(void){
 
 static inline void read_counters_arm(uint64_t* values) {
     // Read the current values of the counters
-    uint64_t pmccntr_val, pmxevcntr0_val, pmxevcntr1_val, pmxevcntr2_val;
+	uint64_t pmccntr_val, pmxevcntr0_val, pmxevcntr1_val, pmxevcntr2_val;
     asm volatile("mrs %0, PMCCNTR_EL0" : "=r" (pmccntr_val)); // Read cycle counter
     asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (pmxevcntr0_val)); // Read LLC misses counter
     asm volatile("msr PMSELR_EL0, %0" : : "r" (1)); // Select counter 1
@@ -439,8 +423,8 @@ static inline void store_int32_asm(void *p, const uint32_t v) {
 
 static inline void write_nti32_intel(void *p, const uint32_t v) {
 	asm volatile("movnti %0, (%1)\n\t"
-		     :
-		     : "r"(v), "r"(p)
+		     	 :
+		     	 : "r"(v), "r"(p)
 	             : "memory");
 }
 
@@ -510,18 +494,14 @@ void dealloc_log_space(void){
 
 
 void cpu_idle_states(void) {
-        struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
-        struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-
-        //printbstates
-        int i;
-        printk(KERN_INFO "cpuidle stats state_count=%d\n", drv->state_count);
-        for(i=0;i<drv->state_count;i++) {
-          printk(KERN_INFO "i=%d name=%s exit_latency=%u target_residency=%u power_usage_mW=%i\n",
-                 i, drv->states[i].name,
-                 drv->states[i].exit_latency, drv->states[i].target_residency, drv->states[i].power_usage);
-        }
-
+    struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+    struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+    //print states
+    int i;
+    printk(KERN_INFO "cpuidle stats state_count=%d\n", drv->state_count);
+    for(i=0;i<drv->state_count;i++) {
+        printk(KERN_INFO "i=%d name=%s exit_latency=%u target_residency=%u power_usage_mW=%i\n", i, drv->states[i].name, drv->states[i].exit_latency, drv->states[i].target_residency, drv->states[i].power_usage);
+    }
 }
 
 
@@ -531,24 +511,22 @@ void cpu_idle_states(void) {
 int alloc_log_space(struct mlx5e_priv *priv) {                                                                                                                                                                                                        
 	int flag = 0;
 	int i = 0;
-        uint64_t now;                                                                                                                                                                                                                    
-        printk(KERN_INFO "****************** intLog init *******************");                                                                                                                                                    
-        while (i < NUM_CORES)   
-        {                
-		         logs[i].log = (union LogEntry *)vmalloc(sizeof(union LogEntry) * LOG_SIZE);               
-		         printk(KERN_INFO "%d vmalloc size=%lu addr=%p\n", i, (sizeof(union LogEntry) * LOG_SIZE), (void*)(logs[i].log));  
-		         memset(logs[i].log, 0, (sizeof(union LogEntry) * LOG_SIZE));                                  
-		
-		         if(!(logs[i].log))                 
-		         {                     
-			       printk(KERN_INFO "Fail to vmalloc logs[%d]->log\n", i);  
-			       flag = 1;                                                                                                                                     
-		         }                                                                                                                                                                                           		              logs[i].itr_joules_last_tsc = 0;                                                                                                                                                                                    logs[i].msix_other_cnt = 0;                                                                                                                                                                                        logs[i].itr_cookie = 0;
-			 logs[i].non_itr_cnt = 0;
-			 logs[i].itr_cnt = 0;                                                                                                                                                                                                logs[i].perf_started = 0;
-			 i++;
-
-        }
+    uint64_t now;                                                                                                                                                                                                                    
+    printk(KERN_INFO "****************** intLog init *******************");                                                                                                                                                    
+    while (i < NUM_CORES)   
+    {                
+		logs[i].log = (union LogEntry *)vmalloc(sizeof(union LogEntry) * LOG_SIZE);               
+		printk(KERN_INFO "%d vmalloc size=%lu addr=%p\n", i, (sizeof(union LogEntry) * LOG_SIZE), (void*)(logs[i].log));  
+		memset(logs[i].log, 0, (sizeof(union LogEntry) * LOG_SIZE));                                  
+		if(!(logs[i].log))                 
+		{                     
+			printk(KERN_INFO "Fail to vmalloc logs[%d]->log\n", i);  
+			flag = 1;                                                                                                                                     
+		}                                                                                                                                                                                           		              logs[i].itr_joules_last_tsc = 0;                                                                                                                                                                                    logs[i].msix_other_cnt = 0;                                                                                                                                                                                        logs[i].itr_cookie = 0;
+		logs[i].non_itr_cnt = 0;
+		logs[i].itr_cnt = 0;                                                                                                                                                                                                logs[i].perf_started = 0;
+		i++;
+    }
 
 	/*************** clear sw_stats *****************/
 	struct mlx5e_stats stats = priv->stats;
@@ -560,7 +538,6 @@ int alloc_log_space(struct mlx5e_priv *priv) {
 	sw_stats.rx_bytes = 0;
 	sw_stats.tx_packets = 0; 
 	sw_stats.rx_packets = 0;
-	
 
 	tsc_per_milli = tsc_khz;       
 	now = get_rdtsc_arm_2();//possible func to get rdtsc            
@@ -570,18 +547,17 @@ int alloc_log_space(struct mlx5e_priv *priv) {
 	cpu_idle_states();
 	return flag;
 }                                                                                                                                                                                                                                  
-                                                                                                                                                                                                                                   
-                                                                                                                                                                                                                                   
+                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 //deallocate memory for logs                                                                                                                                                                                                       
 void dealloc_log_space(void){                                                                                                                                                                                                             
 	int i = 0;
-        while(i < NUM_CORES)
-        {                                                                                                                                                                                        
-	        if(logs[i].log){    
-			vfree(logs[i].log); 
-        	}                                                                                                                                                                                                                                 
-	       i++;
-        }                                                                                                                                                                                                                         
+    while(i < NUM_CORES)
+    {                                                                                                                                                                                        
+	    if(logs[i].log){    
+		vfree(logs[i].log); 
+        }                                                                                                                                                                                                                                 
+	    i++;
+    }                                                                                                                                                                                                                         
 }    
 
 
@@ -623,16 +599,15 @@ void record_log(struct mlx5e_priv *priv){
    	uint64_t now = 0, last = 0;
    	int icnt = 0;
 	uint64_t counters[4];
-
 	//long long c0, c1, c2;
 	//long long num_cycs;
 	//long long n_instr;
-        //long long num_ref_cycs;
-        //long long energy;
+    //long long num_ref_cycs;
+    //long long energy;
 	//long long num_miss;
 	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
 	//struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-        //int power_usage;
+    //int power_usage;
 	//int cpu_num;
 	//not liking the looks of this one
 	struct mlx5e_rq rq = priv->drop_rq;
@@ -650,92 +625,80 @@ void record_log(struct mlx5e_priv *priv){
 	int cpu = ch->cpu;
 
 	//alternative way to get cpu #
-        //int current_cpu = smp_processor_id(); // might be easier? but still need priv to get stats
+    //int current_cpu = smp_processor_id(); // might be easier? but still need priv to get stats
 
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
 
    	if(icnt < LOG_SIZE) 
-	  {
-     		ile = &il->log[icnt];
-     		now = get_rdtsc_arm_2();
+	{ 
+     	ile = &il->log[icnt];
+     	now = get_rdtsc_arm_2();
 
 		//might need semapores for safe access
 		struct timecounter time_count = clock.tc;
-		u64 nsec = time_count.nsec;
+		uint64_t nsec = time_count.nsec;
 		//let this take the place of now
+		uint64_t nm_cycs = time_count.cycle_last;
 
-		u64 nm_cycs = time_count.cycle_last;
-		
 		//possibly when initilizing these feilds need to zero 
 		store_int64_asm(&(ile->Fields.tsc), now);
-		store_int64_asm(&(ile->Fields.tx_bytes), sw_stats.tx_bytes); //these r both u64 ints
+		store_int64_asm(&(ile->Fields.tx_bytes), sw_stats.tx_bytes); //these r both u64 ints			
 		store_int64_asm(&(ile->Fields.rx_bytes), sw_stats.rx_bytes);
 		store_int64_asm(&(ile->Fields.tx_desc), sw_stats.tx_packets);
 		store_int64_asm(&(ile->Fields.rx_desc), sw_stats.rx_packets);
 
-
 		sw_stats.tx_bytes = 0;
 		sw_stats.rx_bytes = 0; //reset counters for next interrupt
-		
 		sw_stats.tx_packets = 0;
 		sw_stats.rx_packets = 0; 
 
+     	//get last rdtsc
+     	last = il->itr_joules_last_tsc;
 		
-     		//get last rdtsc
-     		last = il->itr_joules_last_tsc;
-		
-                if((now - last) > tsc_per_milli)
+        if((now - last) > tsc_per_milli)
 		{
-		        //store current rdtsc
-		        il->itr_joules_last_tsc = now;
-	     		//first get the joules
-
+		    //store current rdtsc
+		    il->itr_joules_last_tsc = now;
+	     	//first get the joules
 			//store_int64_asm(&(ile->Fields.joules), energy);
-	     	       
-     			if(il->perf_started) 
+	   
+     		if(il->perf_started) 
 			{
-				  read_counters_arm(counters);
+				read_counters_arm(counters);
+				//num_miss = get_llcm_arm(); //this para is defined in header
+			    store_int64_asm(&(ile->Fields.nllc_miss), counters[1]);
+				//write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
+				//num_cycs = get_instr_count_arm();
+		  		store_int64_asm(&(ile->Fields.ncycles), counters[2]);
+				//write_nti64_arm_test(&(ile->Fields.ninstructions), num_cycs);      
+			    store_int64_asm(&(ile->Fields.ninstructions), counters[3]);
 
-			          //num_miss = get_llcm_arm(); //this para is defined in header
-			          store_int64_asm(&(ile->Fields.nllc_miss), counters[1]);
-				  //write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
-		 		
-				  //num_cycs = get_instr_count_arm();
-		  		  store_int64_asm(&(ile->Fields.ncycles), counters[2]);
-				  //write_nti64_arm_test(&(ile->Fields.ninstructions), num_cycs);
-		                  
-			          store_int64_asm(&(ile->Fields.ninstructions), counters[3]);
-
-			          //num_ref_cycs = get_refcyc_arm();
-			          //store_int64_asm(&(ile->Fields.ncycles), num_ref_cycs);
-		  		      //write_nti64_arm_test(&(ile->Fields.ncycles), num_ref_cycs);
-
-		  		      //need to include all the sleep states
-
-				  //usage = cpu_idle_dev->states_usage;
-			       	        //c0 = cpu_idle_dev->states_usage[0];
-		  		      //c1 = cpu_idle_dev->states_usage[1];
-		  		      //c2 = cpu_idle_dev->states_usage[2]; 
-		  	      	      //c3 = cpu_idle_dev->states_usage[3];
-		  		      //log hardware stats here
-		  		      // like c stats, cycles, LLCM, instructions
-		       }
-		
-		if(il->perf_started == 0) 
-		{
-		  	//initilaze performance counters
+			    //num_ref_cycs = get_refcyc_arm();
+			    //store_int64_asm(&(ile->Fields.ncycles), num_ref_cycs);
+		  		//write_nti64_arm_test(&(ile->Fields.ncycles), num_ref_cycs);
+		  		//need to include all the sleep states
+				//usage = cpu_idle_dev->states_usage;
+			    //c0 = cpu_idle_dev->states_usage[0];
+		  		//c1 = cpu_idle_dev->states_usage[1];
+		  		//c2 = cpu_idle_dev->states_usage[2]; 
+		  	    //c3 = cpu_idle_dev->states_usage[3];
+		  		//log hardware stats here
+		  		// like c stats, cycles, LLCM, instructions
+		    }
+			if(il->perf_started == 0) 
+			{
+		  		//initilaze performance counters
 		        //init ins, cycles, and ref_cyss and then start
 		        // enable_cpu_counters();
 		        configure_pmu();
-			il->perf_started = 1;
-		}		
-	 }
+				il->perf_started = 1;
+			}		
+	 	}
 	//increment coutner to keep track of # of log entries
 	il->itr_cnt++;
-       }
+    }
 }
-
 
 /*************************************************************************************************/
 /******************************** create dir /proc/arm_stats/core/N ******************************/
@@ -755,7 +718,7 @@ int create_dir(void) {
 	}
 	while(i<NUM_CORES) {
 		char name [4]; //not sure why size 5
-       		sprintf(name, "%ld", i);
+       	sprintf(name, "%ld", i);
  		if(!proc_create_data(name, 0444, stats_core_dir, &ct_file_ops_intlog, (void *)i)) {
 			printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/core/%ld\n", i);
 		}
@@ -764,7 +727,6 @@ int create_dir(void) {
 	printk(KERN_INFO "Successfully loaded /proc/arm_stats/\n");	
 	return 0;
 }
-
 
 void remove_dir(void) {
 	remove_proc_subtree("arm_stats", NULL);
