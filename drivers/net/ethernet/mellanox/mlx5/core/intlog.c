@@ -31,7 +31,8 @@
 /*************************************************************************
  * intLog: access tsc tick rate
  *************************************************************************/
-extern unsigned int tsc_khz = 0; //this should not be init to 0
+extern unsigned int tsc_khz;
+//= 0; //this should not be init to 0
 
 //not sure why this had to be included as extern
 
@@ -49,7 +50,7 @@ struct Log logs[NUM_CORES];
 
 ////////////////////////////////////////////////////////////////
 struct proc_dir_entry *stats_dir;  //these were extern
-struct proc_dir_entry *core_dir;
+struct proc_dir_entry *stats_core_dir;
 ////////////////////////////////////////////////////////////////
 
 /*********************************************************************************
@@ -213,12 +214,16 @@ static inline uint64_t get_rdtsc_arm_2(void) {
   	return tsc;
 }
 
+
+/*
+ *not used bc just init all counters
+ *
 static void enable_cyc_count_el0(void) {
   uint64_t val;
   asm volatile("msr pmcntenset_el0, %0" :: "r" (1<<31));
 }
 
-
+*/
 static inline u32 armv8pmu_read(void)
 {
         u64 val=0;
@@ -243,7 +248,9 @@ static void  enable_cpu_counters(void) {
 }
 
 
-
+/*
+ * these r incorrect functions 
+ *
 static inline uint64_t pstate_1(void) {
   uint64_t val;
   asm volatile("MSR %[val], SPSR_EL1\n"
@@ -268,7 +275,7 @@ static inline uint64_t pstate_3(void) {
 
 }
 
-
+*/
 
 /*
 
@@ -441,6 +448,24 @@ void dealloc_log_space(void){
 }
 
 */
+
+
+void cpu_idle_states(void) {
+        struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+        struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+
+        //printbstates
+        int i;
+        printk(KERN_INFO "cpuidle stats state_count=%d\n", drv->state_count);
+        for(i=0;i<drv->state_count;i++) {
+          printk(KERN_INFO "i=%d name=%s exit_latency=%u target_residency=%u power_usage_mW=%i\n",
+                 i, drv->states[i].name,
+                 drv->states[i].exit_latency, drv->states[i].target_residency, drv->states[i].power_usage);
+        }
+
+}
+
+
 //without for 
 
 // allocates memory for creation of log                                                                                                                                                                                            
@@ -458,7 +483,7 @@ int alloc_log_space(struct mlx5e_priv *priv) {
 		         if(!(logs[i].log))                 
 		         {                     
 			       printk(KERN_INFO "Fail to vmalloc logs[%d]->log\n", i);  
-			        flag = 1;                                                                                                                                     
+			       flag = 1;                                                                                                                                     
 		         }                                                                                                                                                                                                                              
 		         logs[i].itr_joules_last_tsc = 0;                                                                                                                                                                                              
 		         logs[i].msix_other_cnt = 0;                                                                                                                                                                                                    
@@ -487,6 +512,8 @@ int alloc_log_space(struct mlx5e_priv *priv) {
 	now = get_rdtsc_arm_2();//possible func to get rdtsc            
 	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
 	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
+	//use cpu idle fun c to dipsplay idle states and stats
+	cpu_idle_states();
 	return flag;
 }                                                                                                                                                                                                                                  
                                                                                                                                                                                                                                    
@@ -502,22 +529,6 @@ void dealloc_log_space(void){
 	       i++;
         }                                                                                                                                                                                                                         
 }    
-
-
-void cpu_idle_states(void) {
-	struct cpuidle_device *dev = __this_cpu_read(cpuidle_device);
-	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-
-	//printbstates
-	int i;
-	printk(KERN_INFO "cpuidle stats state_count=%d\n", drv->state_count);
-	for(i=0;i<drv->state_count;i++) {
-	  printk(KERN_INFO "i=%d name=%s exit_latency=%u target_residency=%u power_usage_mW=%i\n",
-		 i, drv->states[i].name,
-		 drv->states[i].exit_latency, drv->states[i].target_residency, drv->states[i].power_usage);
-	}
-
-}
 
 
 /*************************************************************************************************/
@@ -559,13 +570,13 @@ void record_log(struct mlx5e_priv *priv){
    	int icnt = 0;
 	//long long c0, c1, c2;
 	long long num_cycs;
-        //long long num_ref_cycs;
+        long long num_ref_cycs;
         //long long energy;
 	long long num_miss;
-   	struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
+	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
 	//struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-	int power_usage;
-	int cpu_num;
+        //int power_usage;
+	//int cpu_num;
 	//not liking the looks of this one
 	struct mlx5e_rq rq = priv->drop_rq;
 	struct mlx5e_channel *ch = rq.channel;
@@ -627,8 +638,9 @@ void record_log(struct mlx5e_priv *priv){
 	     	       
      			if(il->perf_started) 
 			{
-			  //num_miss = get_llcm_arm(); //this para is defined in header
-			          //write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
+			          num_miss = get_llcm_arm(); //this para is defined in header
+			          store_int64_asm(&(ile->Fields.nllc_miss), num_cycs);
+				  //write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
 		 		
 				  num_cycs = get_instr_count_arm();
 		  		  store_int64_asm(&(ile->Fields.ninstructions), num_cycs);
@@ -669,11 +681,13 @@ void record_log(struct mlx5e_priv *priv){
 }
 
 
-/******************************************* create dir /proc/arm_stats/core/N **************************************/
+/*************************************************************************************************/
+/******************************** create dir /proc/arm_stats/core/N ******************************/
+/*************************************************************************************************/
 
-
-void create_dir(void) {
+int create_dir(void) {
 	stats_dir = proc_mkdir("arm_stats", NULL);
+	unsigned long int i=0;
 	if(!stats_dir) {
 		printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/\n");
 		return -ENOMEM;
@@ -681,20 +695,19 @@ void create_dir(void) {
 	stats_core_dir = proc_mkdir("core", stats_dir);
 	if(!stats_core_dir) {
 		printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/core/\n");
-		return -ENOMEM;
+		return -ENOMEM; //memory error???
 	}
-	for(i=0; i<NUM_CORES; i++) {
+	while(i<NUM_CORES) {
 		char name [4]; //not sure why size 5
        		sprintf(name, "%ld", i);
  		if(!proc_create_data(name, 0444, stats_core_dir, &ct_file_ops_intlog, (void *)i)) {
 			printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/core/%ld\n", i);
 		}
+	i++;
 	}
 	printk(KERN_INFO "Successfully loaded /proc/arm_stats/\n");	
-
+	return 0;
 }
-
-
 
 
 void remove_dir(void) {
