@@ -586,9 +586,13 @@ int alloc_log_space(struct mlx5e_priv *priv) {
 		{                     
 			printk(KERN_INFO "Fail to vmalloc logs[%d]->log\n", i);  
 			flag = 1;                                                                                                                                     
-		}                                                                                                                                                                                           		              logs[i].itr_joules_last_tsc = 0;                                                                                                                                                                                    logs[i].msix_other_cnt = 0;                                                                                                                                                                                        logs[i].itr_cookie = 0;
+		}
+		logs[i].itr_joules_last_tsc = 0;
+		logs[i].msix_other_cnt = 0;
+		logs[i].itr_cookie = 0;
 		logs[i].non_itr_cnt = 0;
-		logs[i].itr_cnt = 0;                                                                                                                                                                                                logs[i].perf_started = 0;
+		logs[i].itr_cnt = 0;
+		logs[i].perf_started = 0;
 		i++;
     }
 
