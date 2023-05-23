@@ -266,6 +266,72 @@ static inline void configure_pmu(void) {
 
 
 
+static inline void en_reset_regs(void){
+	uint32_t pmcr_val = 0;
+	pmcr_val |= (1 << 0);  // Enable all counters
+	pmcr_val |= (1 << 2);  // Reset all counters
+	asm volatile("msr pmcr_el0, %0" : : "r" (pmcr_val));
+}
+
+static inline void config_counters(void) {
+    uint32_t llc_misses_event = 0x37;
+    uint32_t cycle_count_event = 0x11;
+    uint32_t instruction_count_event = 0x08;
+	asm volatile("msr pmxevtyper_el0, %0" : : "r" (llc_misses_event));
+	uint32_t counter_index = 0;  // Counter index (0, 1, 2, etc.)
+	asm volatile("msr pmselr_el0, %0" : : "r" (counter_index));
+	uint32_t pmcntenset_val = 0;
+	pmcntenset_val |= (1 << counter_index);  // Enable the selected counter
+	asm volatile("msr pmcntenset_el0, %0" : : "r" (pmcntenset_val));
+	counter_index++;
+	asm volatile("msr pmselr_el0, %0" : : "r" (counter_index));
+}
+
+//newest config
+void configureCounters()
+{
+    // Configure event codes for different counters
+    uint32_t llc_misses_event = 0x37;
+    uint32_t cycle_count_event = 0x11;
+    uint32_t instruction_count_event = 0x08;
+    
+    // Configure counter 0
+    asm volatile("msr PMSELR_EL0, %0" : : "r" (0));
+    asm volatile("msr PMXEVTYPER_EL0, %0" : : "r" (llc_misses_event));
+    
+    // Configure counter 1
+    asm volatile("msr PMSELR_EL0, %0" : : "r" (1));
+    asm volatile("msr PMXEVTYPER_EL0, %0" : : "r" (cycle_count_event));
+    
+    // Configure counter 2
+    asm volatile("msr PMSELR_EL0, %0" : : "r" (2));
+    asm volatile("msr PMXEVTYPER_EL0, %0" : : "r" (instruction_count_event));
+    
+    // Enable all counters by setting the corresponding bits in PMCNTENSET_EL0
+    uint32_t pmcntenset_val = 0x7;
+    asm volatile("msr PMCNTENSET_EL0, %0" : : "r" (pmcntenset_val));
+}
+
+void readCounters()
+{
+    uint32_t pmxevcntr0_val, pmxevcntr1_val, pmxevcntr2_val;
+
+    // Read from counter 0 LLC miss
+    asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (pmxevcntr0_val));
+    
+    // Read from counter 1 cycle count
+    asm volatile("msr PMSELR_EL0, %0" : : "r" (1));
+    asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (pmxevcntr1_val));
+    
+    // Read from counter 2, instruction count
+    asm volatile("msr PMSELR_EL0, %0" : : "r" (2));
+    asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (pmxevcntr2_val));
+
+    printf("Counter 0 value: %u\n", pmxevcntr0_val);
+    printf("Counter 1 value: %u\n", pmxevcntr1_val);
+    printf("Counter 2 value: %u\n", pmxevcntr2_val);
+}
+
 /*
  * these r incorrect functions 
  *
