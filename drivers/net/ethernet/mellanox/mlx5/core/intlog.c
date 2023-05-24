@@ -18,7 +18,7 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h> /* seq_read, seq_lseek, single_release */
 #include <linux/time.h>
-
+#include <linux/types.h>
 #include <linux/cpumask.h>
 #include <linux/smp.h>
 //#include "en_stats.h"
@@ -26,6 +26,7 @@
 #include "en.h"
 #include "intlog.h"
 #include <linux/timecounter.h>
+#include <linux/fs.h>
 
 
 /*************************************************************************
@@ -240,7 +241,6 @@ void configure_pmu(void)
 
 void read_counters(uint64_t* values)
 {
-
     uint32_t pmxevcntr0_val, pmxevcntr1_val, pmxevcntr2_val;
 
     // Read from counter 0 LLC miss

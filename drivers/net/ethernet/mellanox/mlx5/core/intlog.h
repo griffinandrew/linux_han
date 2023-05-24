@@ -9,9 +9,11 @@
 #include <linux/string.h>
 #include <linux/etherdevice.h>
 #include <linux/ethtool.h>
-
+#include <linux/proc_fs.h>
 #include "en.h"
-
+#include <linux/sysfs.h>
+#include <linux/types.h>
+#include <linux/fs.h>
 
 // a single LogEntry is a single row of data in the entire log
 union LogEntry { 
