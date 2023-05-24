@@ -90,3 +90,11 @@ void record_log(struct mlx5e_priv *priv);
 void remove_dir(void);
 
 int create_dir(void);
+
+// *********************** IDLE STATES ***********************
+void cpu_idle_states(void);
+
+// *********************** PMU things ***********************
+void read_counters(uint64_t* values);
+
+void configure_pmu(void);
