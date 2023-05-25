@@ -327,7 +327,7 @@ void cpu_idle_states(void) {
 //without for bc C vers
 
 // allocates memory for creation of log                                                                                                                                                                                            
-int alloc_log_space(struct mlx5e_priv *priv) {                                                                                                                                                                                                        
+int alloc_log_space(void) {                                                                                                                                                                                                        
 	int flag = 0;
 	int i = 0;
     uint64_t now;                                                                                                                                                                                                                    
@@ -351,16 +351,17 @@ int alloc_log_space(struct mlx5e_priv *priv) {
 		i++;
     }
 
+    
 	/*************** clear sw_stats *****************/
-	struct mlx5e_stats stats = priv->stats;
-	struct mlx5e_sw_stats sw_stats= stats.sw;
+	//struct mlx5e_stats stats = priv->stats;
+	//struct mlx5e_sw_stats sw_stats= stats.sw;
 	//one of these should be a pointer 
 
 	//reset
-	sw_stats.tx_bytes = 0;
-	sw_stats.rx_bytes = 0;
-	sw_stats.tx_packets = 0; 
-	sw_stats.rx_packets = 0;
+	//sw_stats.tx_bytes = 0;
+	//sw_stats.rx_bytes = 0;
+	//sw_stats.tx_packets = 0; 
+	//sw_stats.rx_packets = 0;
 
 	tsc_per_milli = tsc_khz;       
 	now = get_rdtsc_arm_phys();//possible func to get rdtsc            

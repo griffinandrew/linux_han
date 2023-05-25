@@ -6051,6 +6051,18 @@ int mlx5e_init(void)
 	ret = mlx5e_rep_init();
 	if (ret)
 		auxiliary_driver_unregister(&mlx5e_driver);
+	
+	/******************************** INTLOG INIT*********************************/
+	//allocate the appropraite memory for the logs when opening the device then create the dirs 
+	ret = alloc_log_space();
+	if (ret)
+		return ret; //if true it fails
+	
+	/****************** create proc/stats/core/N*********************/
+	ret = create_dir();
+	if(ret)
+		return ret;
+	
 	return ret;
 }
 
@@ -6058,4 +6070,9 @@ void mlx5e_cleanup(void)
 {
 	mlx5e_rep_cleanup();
 	auxiliary_driver_unregister(&mlx5e_driver);
+
+	/*********************** INTLOG DEALLOC **************************/
+	dealloc_log_space();
+	/***************** del dir for logs ************************/
+        remove_dir();
 }

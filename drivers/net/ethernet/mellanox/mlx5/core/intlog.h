@@ -80,7 +80,7 @@ void ct_stop(struct seq_file *s, void *v);
 int ct_open(struct inode *inode, struct file *file);
 
 // ************************ ALLOC FUNCS *******************************
-int alloc_log_space(struct mlx5e_priv *priv);
+int alloc_log_space(void);
 
 void dealloc_log_space(void);
 

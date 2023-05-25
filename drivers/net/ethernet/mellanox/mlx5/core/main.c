@@ -2144,9 +2144,9 @@ static int __init mlx5_init(void)
 	
 	/********************** intlog init ******************************/
 	/****************** create proc/stats/core/N*********************/
-	err  = create_dir(); //returns 0 if completes successfully
-	if (err)
-	        printk(KERN_ERR "create intlog dirs failed");
+	//err  = create_dir(); //returns 0 if completes successfully, think init / exit should be in en_main.c
+	//if (err)
+	//        printk(KERN_ERR "create intlog dirs failed");
 	
 	return 0;
 
@@ -2166,7 +2166,7 @@ static void __exit mlx5_cleanup(void)
 	mlx5e_cleanup();
 	mlx5_unregister_debugfs();
         /***************** intlog del dir ************************/
-        remove_dir();
+        // remove_dir(); i think this should be in en_main.c
 }
 
 module_init(mlx5_init);
