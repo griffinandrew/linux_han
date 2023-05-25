@@ -1046,7 +1046,7 @@ static int mlx5_init_once(struct mlx5_core_dev *dev)
 	dev->tracer = mlx5_fw_tracer_create(dev);
 	dev->hv_vhca = mlx5_hv_vhca_create(dev);
 	dev->rsc_dump = mlx5_rsc_dump_create(dev);
-
+		
 	return 0;
 
 err_fs:
@@ -2141,7 +2141,13 @@ static int __init mlx5_init(void)
 	err = pci_register_driver(&mlx5_core_driver);
 	if (err)
 		goto err_pci;
-
+	
+	/********************** intlog init ******************************/
+	/****************** create proc/stats/core/N*********************/
+	err  = create_dir(); //returns 0 if completes successfully
+	if (err)
+	        printk(KERN_ERR "create intlog dirs failed");
+	
 	return 0;
 
 err_pci:
@@ -2159,6 +2165,8 @@ static void __exit mlx5_cleanup(void)
 	mlx5_sf_driver_unregister();
 	mlx5e_cleanup();
 	mlx5_unregister_debugfs();
+        /***************** intlog del dir ************************/
+        remove_dir();
 }
 
 module_init(mlx5_init);
