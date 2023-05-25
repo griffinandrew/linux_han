@@ -46,6 +46,8 @@ unsigned int tsc_per_milli;
 struct Log logs[NUM_CORES];
 /*************************************************************************/
 
+struct net_device *ndev;
+struct mlx5e_priv *epriv;
 
 //struct mlx4_en_cq *cq;
 
@@ -369,6 +371,10 @@ int alloc_log_space(void) {
 	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
 	//use cpu idle fun c to dipsplay idle states and stats
 	cpu_idle_states();
+	
+	//call func to get ndev and epriv globally?
+	set_ndev_and_epriv();
+
 	return flag;
 }                                                                                                                                                                                                                                  
                                                                                                                                                                                                                                                                                                                                                                                                                                                                
@@ -417,7 +423,7 @@ void record_rx_poll_info(struct mlx5e_cq *cq, u64 npkts) {
 
 
 //for this driver there is nothing passed to irqreturn_t func that can be used to extract the core atm
-void record_log(struct mlx5e_priv *priv){
+void record_log(){
 	struct Log *il;
    	union LogEntry *ile;
    	uint64_t now = 0, last = 0;
@@ -434,22 +440,22 @@ void record_log(struct mlx5e_priv *priv){
     //int power_usage;
 	//int cpu_num;
 	//not liking the looks of this one
-	struct mlx5e_rq rq = priv->drop_rq;
-	struct mlx5e_channel *ch = rq.channel;
+	//struct mlx5e_rq rq = priv->drop_rq;
+	//struct mlx5e_channel *ch = rq.channel;
 	struct mlx5_core_dev *core_dev = priv->mdev; //(could be a &)
 
 
 	//get mlx5e_stats
-	struct mlx5e_stats stats = priv->stats;
-	struct mlx5e_sw_stats sw_stats = stats.sw; 
+	//struct mlx5e_stats stats = priv->stats;
+	//struct mlx5e_sw_stats sw_stats = stats.sw; 
 
 	//use clock to record time and cycs
 	struct mlx5_clock clock = core_dev->clock;
 	
-	int cpu = ch->cpu;
+	//int cpu = ch->cpu;
 
 	//alternative way to get cpu #
-    //int current_cpu = smp_processor_id(); // might be easier? but still need priv to get stats
+        int cpu = smp_processor_id(); // might be easier? but still need priv to get stats
 
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
@@ -467,15 +473,15 @@ void record_log(struct mlx5e_priv *priv){
 
 		//possibly when initilizing these feilds need to zero 
 		store_int64_asm(&(ile->Fields.tsc), now);
-		store_int64_asm(&(ile->Fields.tx_bytes), sw_stats.tx_bytes); //these r both u64 ints			
-		store_int64_asm(&(ile->Fields.rx_bytes), sw_stats.rx_bytes);
-		store_int64_asm(&(ile->Fields.tx_desc), sw_stats.tx_packets);
-		store_int64_asm(&(ile->Fields.rx_desc), sw_stats.rx_packets);
+		//store_int64_asm(&(ile->Fields.tx_bytes), sw_stats.tx_bytes); //these r both u64 ints			
+		//store_int64_asm(&(ile->Fields.rx_bytes), sw_stats.rx_bytes);
+		//store_int64_asm(&(ile->Fields.tx_desc), sw_stats.tx_packets);
+		//store_int64_asm(&(ile->Fields.rx_desc), sw_stats.rx_packets);
 
-		sw_stats.tx_bytes = 0;
-		sw_stats.rx_bytes = 0; //reset counters for next interrupt
-		sw_stats.tx_packets = 0;
-		sw_stats.rx_packets = 0; 
+		//sw_stats.tx_bytes = 0;
+		//sw_stats.rx_bytes = 0; //reset counters for next interrupt
+		//sw_stats.tx_packets = 0;
+		//sw_stats.rx_packets = 0; 
 
      	//get last rdtsc
      	last = il->itr_joules_last_tsc;
@@ -558,4 +564,11 @@ int create_dir(void) {
 
 void remove_dir(void) {
 	remove_proc_subtree("arm_stats", NULL);
+}
+
+
+//trying to use this function to get once so dont need to constantly call on irq
+void set_ndev_and_epriv(void){
+	ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0");
+	epriv = netdev_priv(ndev);
 }

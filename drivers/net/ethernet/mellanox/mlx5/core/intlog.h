@@ -85,8 +85,7 @@ int alloc_log_space(void);
 void dealloc_log_space(void);
 
 // ************************** RECORD LOG ********************************
-void record_log(struct mlx5e_priv *priv);
-
+void record_log(void);
 
 // *********************** CREATE / REMOVE PROCS_DIR ***********************
 void remove_dir(void);
@@ -100,3 +99,5 @@ void cpu_idle_states(void);
 void read_counters(uint64_t* values);
 
 void configure_pmu(void);
+
+void set_ndev_and_epriv(void); //perhaps could be static?
