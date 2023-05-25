@@ -183,18 +183,20 @@ inline uint64_t get_rdtsc_intel(void){
 
 //possibly arm implementation for retreiving tsc
 //this gets the physical timer val not the virtual
+
+// CNTP_TVAL_EL0 from CNTP_TVAL
 static inline uint64_t get_rdtsc_arm_phys(void){
 	uint64_t tsc;
-	asm volatile("mrs %0, CNTP_TVAL" : "=r" (tsc));
+	asm volatile("mrs %0, CNTP_TVAL_EL0" : "=r" (tsc));
   	return tsc;
 }
 
-
 //other possible implementaion to get timestamp
 //gets virtual timer
+//from CNTV_TVAL to CNTV_TVAL_EL0
 static inline uint64_t get_rdtsc_arm_vir(void) {
 	uint64_t tsc;
-	asm volatile("mrs %0, CNTV_TVAL" : "=r" (tsc));
+	asm volatile("mrs %0, CNTV_TVAL_EL0" : "=r" (tsc));
   	return tsc;
 }
 
