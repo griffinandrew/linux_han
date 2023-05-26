@@ -49,8 +49,6 @@ struct Log logs[NUM_CORES];
 struct net_device *ndev;
 struct mlx5e_priv *epriv;
 
-//struct mlx4_en_cq *cq;
-
 ////////////////////////////////////////////////////////////////
 struct proc_dir_entry *stats_dir;
 struct proc_dir_entry *stats_core_dir;
@@ -263,13 +261,14 @@ void read_counters(uint64_t* values)
     values[2] = pmxevcntr2_val;
 }
 
+/* //think this function is garbage
 //gets the number of ref cycles (phyiscal count register)
 static inline long long get_refcyc_arm(void){
   	long long val;
   	asm volatile("msr %0, CNTPCT_EL0 " : "=r" (val));
   	return val; 
 } //registeR CNTVCT_EL0 IS NON privilged virtual version of this
-
+*/
 /*************************************************************************************************/
 //*********************************** ARCH SPEC NTI **********************************************
 //used for non-temporal store instruction so our logging doesnt interfere with performance
@@ -278,33 +277,30 @@ static inline long long get_refcyc_arm(void){
 //p is pointer to mem location to written, v value to overwrite mem location
 static inline void write_nti64_intel(void *p, const uint64_t v) {
 	asm volatile("movnti %0, (%1)\n\t"
-		     : 
-		     : "r"(v), "r"(p)
-		     : "memory");
+		: 
+		: "r"(v), "r"(p)
+		: "memory");
 }
 
 static inline void store_int64_asm(void *p, const uint64_t v) {
 	asm volatile("str %x[v], [%x[p]]"
         : [p] "+r" (p)
         : [v] "r" (v)
-        : "memory"
-    );
+        : "memory");
 }
 
 static inline void store_int32_asm(void *p, const uint32_t v) {
-    asm volatile(
-        "str %w[v], [%x[p]]"
+    asm volatile("str %w[v], [%x[p]]"
         : [p] "+r" (p)
         : [v] "r" (v)
-        : "memory"
-    );
+        : "memory");
 }
 
 static inline void write_nti32_intel(void *p, const uint32_t v) {
 	asm volatile("movnti %0, (%1)\n\t"
-		     	 :
-		     	 : "r"(v), "r"(p)
-	             : "memory");
+		:
+ 		: "r"(v), "r"(p)
+	    : "memory");
 }
 
 
@@ -375,6 +371,9 @@ int alloc_log_space(void) {
 	//call func to get ndev and epriv globally?
 	set_ndev_and_epriv();
 
+	//alloc space for txrx_stats
+
+
 	return flag;
 }                                                                                                                                                                                                                                  
                                                                                                                                                                                                                                                                                                                                                                                                                                                                
@@ -395,27 +394,25 @@ void dealloc_log_space(void){
 /********************************* RECORD per irq info *******************************************/
 /*************************************************************************************************/
 
-/*
-void record_tx_poll_info(struct mlx5e_cq *cq, u64 npkts) {
-	struct Log *il;
-	struct mlx5e_channel *ch = cq->channel;
-	int cpu = ch->cpu;
-	il = &logs[cpu];
-	il->per_itr_tx_packets += npkts;
+
+void record_tx_poll_info(u64 npkts, u64 nbytes) { //gonna have to cast types
+	per_irq_stats.tx_nbytes += nbytes;
+	per_irq_stats.tx_npkts += npkts;
 }
 
-void record_rx_poll_info(struct mlx5e_cq *cq, u64 npkts) {
-	struct Log *il;
-        struct mlx5e_channel *ch = cq->channel;
-        int cpu = ch->cpu;
-        il = &logs[cpu];
-        il->per_itr_rx_packets += npkts;
+void record_rx_poll_info(u64 npkts, u64 nbytes) {
+	per_irq_stats.rx_nbytes += nbytes;
+	per_irq_stats.rx_npkts += npkts;
 }
 
+void reset_per_irq_stats(void) {
+	per_irq_stats.tx_nbytes = 0;
+	per_irq_stats.tx_npkts = 0;
+	per_irq_stats.rx_nbytes = 0;
+	per_irq_stats.rx_npkts = 0;
+}
 
-*/
-//I don't think this function is necessary
-//espcailly if i am taking packets to be descriptors, just use sw_stats, why not?
+//in case can't use sw_stats
 
 /*************************************************************************************************/
 /********************************* RECORD LOG ***************************************************/
@@ -430,20 +427,13 @@ void record_log(){
    	int icnt = 0;
 	uint64_t counters[3];
 	//long long c0, c1, c2;
-	//long long num_cycs;
-	//long long n_instr;
-    //long long num_ref_cycs;
-    //long long energy;
-	//long long num_miss;
 	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
 	//struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
     //int power_usage;
-	//int cpu_num;
 	//not liking the looks of this one
 	//struct mlx5e_rq rq = priv->drop_rq;
 	//struct mlx5e_channel *ch = rq.channel;
-	struct mlx5_core_dev *core_dev = priv->mdev; //(could be a &)
-
+	struct mlx5_core_dev *core_dev = epriv->mdev;
 
 	//get mlx5e_stats
 	//struct mlx5e_stats stats = priv->stats;
@@ -451,11 +441,9 @@ void record_log(){
 
 	//use clock to record time and cycs
 	struct mlx5_clock clock = core_dev->clock;
-	
-	//int cpu = ch->cpu;
 
 	//alternative way to get cpu #
-        int cpu = smp_processor_id(); // might be easier? but still need priv to get stats
+    int cpu = smp_processor_id(); // might be easier? but still need priv to get stats
 
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
@@ -466,10 +454,11 @@ void record_log(){
      	now = get_rdtsc_arm_phys();
 
 		//might need semapores for safe access
-		struct timecounter time_count = clock.tc;
+		struct mlx5_timer timer = clock.timer;
+		struct timecounter time_count = timer.tc;
 		uint64_t nsec = time_count.nsec;
 		//let this take the place of now
-		uint64_t nm_cycs = time_count.cycle_last;
+		uint64_t nm_cycs = time_count.cycle_last; //these r abs tho 
 
 		//possibly when initilizing these feilds need to zero 
 		store_int64_asm(&(ile->Fields.tsc), now);
@@ -497,10 +486,8 @@ void record_log(){
 			{
 				//c stats, cycles, LLCM, instructions
 				read_counters(counters);
-				//num_miss = get_llcm_arm(); //this para is defined in header
 			    store_int64_asm(&(ile->Fields.nllc_miss), counters[1]);
 				//write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
-				//num_cycs = get_instr_count_arm();
 		  		store_int64_asm(&(ile->Fields.ncycles), counters[2]);
 				//write_nti64_arm_test(&(ile->Fields.ninstructions), num_cycs);      
 			    store_int64_asm(&(ile->Fields.ninstructions), counters[3]);
@@ -526,11 +513,18 @@ void record_log(){
 		        //init ins, cycles, and ref_cyss and then start
 				enable_and_reset_regs();
 		        configure_pmu();
+				//possibly reset sw_stats?
+
+			//sw_stats.tx_bytes = 0;
+			//sw_stats.rx_bytes = 0; //reset counters for next interrupt
+			//sw_stats.tx_packets = 0;
+			//sw_stats.rx_packets = 0; 
+
 				il->perf_started = 1;
 			}		
 	 	}
-	//increment coutner to keep track of # of log entries
-	il->itr_cnt++;
+		//increment coutner to keep track of # of log entries
+		il->itr_cnt++;
     }
 }
 
@@ -556,7 +550,7 @@ int create_dir(void) {
  		if(!proc_create_data(name, 0444, stats_core_dir, &ct_file_ops_intlog, (void *)i)) {
 			printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/core/%ld\n", i);
 		}
-	i++;
+		i++;
 	}
 	printk(KERN_INFO "Successfully loaded /proc/arm_stats/\n");	
 	return 0;

@@ -60,8 +60,18 @@ struct Log {
   u32 perf_started;
 } __attribute__((packed, aligned(CACHE_LINE_SIZE)));
 
+
+struct txrx_stats {
+  unsigned int tx_nbytes;
+  unsigned int tx_npkts;
+  unsigned int rx_nbytes;
+  unsigned int rx_npkts;
+} __attribute((packed)); //stay close to other structs for used for this purpose
+
+
 extern struct Log logs[NUM_CORES]; //for the 80 cores
 extern unsigned int tsc_per_milli;
+extern struct txrx_stats per_irq_stats;
 
 extern const struct file_operations ct_file_ops_intlog;
 extern struct seq_operations my_seq_ops_intlog; //both declared in c file
