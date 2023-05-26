@@ -43,6 +43,8 @@
 #include "en/ptp.h"
 #include <net/ipv6.h>
 
+#include "intlog.h"
+
 static void mlx5e_dma_unmap_wqe_err(struct mlx5e_txqsq *sq, u8 num_dma)
 {
 	int i;
@@ -860,6 +862,10 @@ bool mlx5e_poll_tx_cq(struct mlx5e_cq *cq, int napi_budget)
 	sq->cc = sqcc;
 
 	netdev_tx_completed_queue(sq->txq, npkts, nbytes);
+
+	//intlog: send bytes / packets to be counted per irq
+	//not sure if this makes sense here, in hans he tracks on per irq clean descs which doesnt seem to be a func only generic free descs
+	record_rx_poll_info(npkts, nbytes); 
 
 	if (netif_tx_queue_stopped(sq->txq) &&
 	    mlx5e_wqc_has_room_for(&sq->wq, sq->cc, sq->pc, sq->stop_room) &&

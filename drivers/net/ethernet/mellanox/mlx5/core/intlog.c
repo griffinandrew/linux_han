@@ -395,14 +395,14 @@ void dealloc_log_space(void){
 /*************************************************************************************************/
 
 
-void record_tx_poll_info(u64 npkts, u64 nbytes) { //gonna have to cast types
-	per_irq_stats.tx_nbytes += nbytes;
-	per_irq_stats.tx_npkts += npkts;
+void record_tx_poll_info(u16 npkts, u32 nbytes) { //gonna have to cast types
+	per_irq_stats.tx_nbytes += (unsigned int)nbytes;
+	per_irq_stats.tx_npkts += (unsigned int)npkts;
 }
 
-void record_rx_poll_info(u64 npkts, u64 nbytes) {
-	per_irq_stats.rx_nbytes += nbytes;
-	per_irq_stats.rx_npkts += npkts;
+void record_rx_poll_info(u16 npkts, u32 nbytes) {
+	per_irq_stats.rx_nbytes += (unsigned int)nbytes;
+	per_irq_stats.rx_npkts += (unsigned int)npkts;
 }
 
 void reset_per_irq_stats(void) {
