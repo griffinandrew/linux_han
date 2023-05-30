@@ -78,10 +78,10 @@ struct txrx_stats {
 
 
 struct sys_txrx_stats {
-  unsigned int last_tx_nbytes = 0;
-  unsigned int last_tx_npkts = 0;
-  unsigned int last_rx_nbytes = 0;
-  unsigned int last_rx_npkts = 0;
+  unsigned int last_tx_nbytes;
+  unsigned int last_tx_npkts;
+  unsigned int last_rx_nbytes;
+  unsigned int last_rx_npkts;
   unsigned int curr_tx_nbytes;
   unsigned int curr_tx_npkts;
   unsigned int curr_rx_nbytes;
@@ -105,6 +105,7 @@ extern unsigned int tsc_per_milli;
 
 extern struct txrx_stats per_irq_stats;
 extern struct sys_txrx_stats sys_per_irq_stats;
+
 
 extern const struct file_operations ct_file_ops_intlog;
 extern struct seq_operations my_seq_ops_intlog; //both declared in c file

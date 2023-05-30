@@ -54,6 +54,15 @@ struct proc_dir_entry *stats_dir;
 struct proc_dir_entry *stats_core_dir;
 ////////////////////////////////////////////////////////////////
 
+extern struct sys_txrx_stats ;
+
+struct sys_txrx_stats sys_per_irq_stats= {
+    .last_tx_nbytes = 0,
+    .last_tx_npkts = 0,
+	.last_rx_npkts = 0,
+	.last_rx_nbytes = 0
+};
+
 /*********************************************************************************
  * intLog: seq_file interfaces needed to create procfs: /proc/ixgbe_stats/core/N
  *         (https://www.kernel.org/doc/html/latest/filesystems/seq\_file.html)
