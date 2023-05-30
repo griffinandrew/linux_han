@@ -398,9 +398,87 @@ void reset_per_irq_stats(void) {
 //in case can't use sw_stats
 
 /*************************************************************************************************/
-/********************************* RECORD LOG ***************************************************/
+/******************************** create dir /proc/arm_stats/core/N ******************************/
 /*************************************************************************************************/
 
+int create_dir(void) {
+	stats_dir = proc_mkdir("arm_stats", NULL);
+	unsigned long int i=0;
+	if(!stats_dir) {
+		printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/\n");
+		return -ENOMEM;
+	}
+	stats_core_dir = proc_mkdir("core", stats_dir);
+	if(!stats_core_dir) {
+		printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/core/\n");
+		return -ENOMEM; //memory error???
+	}
+	while(i<NUM_CORES) {
+		char name [4]; //not sure why size 5
+       		sprintf(name, "%ld", i);
+ 		if(!proc_create_data(name, 0444, stats_core_dir, &ct_file_ops_intlog, (void *)i)) {
+			printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/core/%ld\n", i);
+		}
+		i++;
+	}
+	printk(KERN_INFO "Successfully loaded /proc/arm_stats/\n");	
+	return 0;
+}
+
+void remove_dir(void) {
+	remove_proc_subtree("arm_stats", NULL);
+}
+
+/*************************************************************************************************/
+/*************** assign vals to global pointers for global access ********************************/
+/*************************************************************************************************/
+
+//trying to use this function to get once so dont need to constantly call on irq
+void set_ndev_and_epriv(void){
+	ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0");
+	epriv = netdev_priv(ndev);
+}
+
+
+
+/*************************************************************************************************/
+/********************************* use sys stats *************************************************/
+/*************************************************************************************************/
+
+void init_sys_irq_stats(void) {
+	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
+	sys_per_irq_stats.last_rx_nbytes = sw_stats.rx_bytes;
+	sys_per_irq_stats.last_rx_npkts = sw_stats.rx_packets;
+	sys_per_irq_stats.last_tx_nbytes = sw_stats.rx_bytes;
+	sys_per_irq_stats.last_tx_npkts = sw_stats.tx_packets;
+}
+
+void record_curr_sys_irq_stats(void) {
+	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
+	sys_per_irq_stats.curr_rx_nbytes = sw_stats.rx_bytes;
+	sys_per_irq_stats.curr_rx_npkts = sw_stats.rx_packets;
+	sys_per_irq_stats.curr_tx_nbytes = sw_stats.rx_bytes;
+	sys_per_irq_stats.curr_tx_npkts = sw_stats.tx_packets;
+}
+
+void diff_sys_stats(void) {
+	sys_per_irq_stats.diff_rx_nbytes = sys_per_irq_stats.curr_rx_nbytes - sys_per_irq_stats.last_rx_nbytes;
+	sys_per_irq_stats.diff_tx_nbytes = sys_per_irq_stats.curr_tx_nbytes - sys_per_irq_stats.last_tx_nbytes;
+	sys_per_irq_stats.diff_rx_npkts = sys_per_irq_stats.curr_rx_npkts - sys_per_irq_stats.last_rx_npkts;
+	sys_per_irq_stats.diff_tx_npkts = sys_per_irq_stats.curr_tx_npkts - sys_per_irq_stats.last_rx_npkts;
+}
+
+void update_sys_stats(void) {
+	sys_per_irq_stats.last_rx_nbytes = sys_per_irq_stats.curr_rx_nbytes;
+	sys_per_irq_stats.last_rx_npkts = sys_per_irq_stats.curr_rx_npkts;
+	sys_per_irq_stats.last_tx_nbytes = sys_per_irq_stats.curr_tx_nbytes;
+	sys_per_irq_stats.last_tx_npkts = sys_per_irq_stats.curr_tx_npkts;
+}
+
+
+/*************************************************************************************************/
+/********************************* RECORD LOG ***************************************************/
+/*************************************************************************************************/
 
 //for this driver there is nothing passed to irqreturn_t func that can be used to extract the core atm
 void record_log(){
@@ -517,73 +595,4 @@ void record_log(){
 		//increment coutner to keep track of # of log entries
 		il->itr_cnt++;
     }
-}
-
-/*************************************************************************************************/
-/******************************** create dir /proc/arm_stats/core/N ******************************/
-/*************************************************************************************************/
-
-int create_dir(void) {
-	stats_dir = proc_mkdir("arm_stats", NULL);
-	unsigned long int i=0;
-	if(!stats_dir) {
-		printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/\n");
-		return -ENOMEM;
-	}
-	stats_core_dir = proc_mkdir("core", stats_dir);
-	if(!stats_core_dir) {
-		printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/core/\n");
-		return -ENOMEM; //memory error???
-	}
-	while(i<NUM_CORES) {
-		char name [4]; //not sure why size 5
-       		sprintf(name, "%ld", i);
- 		if(!proc_create_data(name, 0444, stats_core_dir, &ct_file_ops_intlog, (void *)i)) {
-			printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/core/%ld\n", i);
-		}
-		i++;
-	}
-	printk(KERN_INFO "Successfully loaded /proc/arm_stats/\n");	
-	return 0;
-}
-
-void remove_dir(void) {
-	remove_proc_subtree("arm_stats", NULL);
-}
-
-//trying to use this function to get once so dont need to constantly call on irq
-void set_ndev_and_epriv(void){
-	ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0");
-	epriv = netdev_priv(ndev);
-}
-
-
-void init_sys_irq_stats(void) {
-	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
-	sys_per_irq_stats.last_rx_nbytes = sw_stats.rx_bytes;
-	sys_per_irq_stats.last_rx_npkts = sw_stats.rx_packets;
-	sys_per_irq_stats.last_tx_nbytes = sw_stats.rx_bytes;
-	sys_per_irq_stats.last_tx_npkts = sw_stats.tx_packets;
-}
-
-void record_curr_sys_irq_stats(void) {
-	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
-	sys_per_irq_stats.curr_rx_nbytes = sw_stats.rx_bytes;
-	sys_per_irq_stats.curr_rx_npkts = sw_stats.rx_packets;
-	sys_per_irq_stats.curr_tx_nbytes = sw_stats.rx_bytes;
-	sys_per_irq_stats.curr_tx_npkts = sw_stats.tx_packets;
-}
-
-void diff_sys_stats(void) {
-	sys_per_irq_stats.diff_rx_nbytes = sys_per_irq_stats.curr_rx_nbytes - sys_per_irq_stats.last_rx_nbytes;
-	sys_per_irq_stats.diff_tx_nbytes = sys_per_irq_stats.curr_tx_nbytes - sys_per_irq_stats.last_tx_nbytes;
-	sys_per_irq_stats.diff_rx_npkts = sys_per_irq_stats.curr_rx_npkts - sys_per_irq_stats.last_rx_npkts;
-	sys_per_irq_stats.diff_tx_npkts = sys_per_irq_stats.curr_tx_npkts - sys_per_irq_stats.last_rx_npkts;
-}
-
-void update_sys_stats(void) {
-	sys_per_irq_stats.last_rx_nbytes = sys_per_irq_stats.curr_rx_nbytes;
-	sys_per_irq_stats.last_rx_npkts = sys_per_irq_stats.curr_rx_npkts;
-	sys_per_irq_stats.last_tx_nbytes = sys_per_irq_stats.curr_tx_nbytes;
-	sys_per_irq_stats.last_tx_npkts = sys_per_irq_stats.curr_tx_npkts;
 }
