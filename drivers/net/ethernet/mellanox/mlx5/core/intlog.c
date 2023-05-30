@@ -348,19 +348,6 @@ int alloc_log_space(void) {
 		logs[i].perf_started = 0;
 		i++;
     }
-
-    
-	/*************** clear sw_stats *****************/
-	//struct mlx5e_stats stats = priv->stats;
-	//struct mlx5e_sw_stats sw_stats= stats.sw;
-	//one of these should be a pointer 
-
-	//reset
-	//sw_stats.tx_bytes = 0;
-	//sw_stats.rx_bytes = 0;
-	//sw_stats.tx_packets = 0; 
-	//sw_stats.rx_packets = 0;
-
 	tsc_per_milli = tsc_khz;       
 	now = get_rdtsc_arm_phys();//possible func to get rdtsc            
 	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
@@ -370,10 +357,6 @@ int alloc_log_space(void) {
 	
 	//call func to get ndev and epriv globally?
 	set_ndev_and_epriv();
-
-	//alloc space for txrx_stats
-
-
 	return flag;
 }                                                                                                                                                                                                                                  
                                                                                                                                                                                                                                                                                                                                                                                                                                                                
@@ -383,7 +366,7 @@ void dealloc_log_space(void){
     while(i < NUM_CORES)
     {                                                                                                                                                                                        
 	    if(logs[i].log){    
-		vfree(logs[i].log); 
+			vfree(logs[i].log); 
         }                                                                                                                                                                                                                                 
 	    i++;
     }                                                                                                                                                                                                                         
@@ -426,6 +409,7 @@ void record_log(){
    	uint64_t now = 0, last = 0;
    	int icnt = 0;
 	uint64_t counters[3];
+	uint64_t stat_counters[3];
 	//long long c0, c1, c2;
 	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
 	//struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
@@ -437,7 +421,7 @@ void record_log(){
 
 	//get mlx5e_stats
 	//struct mlx5e_stats stats = priv->stats;
-	//struct mlx5e_sw_stats sw_stats = stats.sw; 
+	struct mlx5e_sw_stats sw_stats = epriv->stats.sw; 
 
 	//use clock to record time and cycs
 	struct mlx5_clock clock = core_dev->clock;
@@ -462,10 +446,21 @@ void record_log(){
 
 		//possibly when initilizing these feilds need to zero 
 		store_int64_asm(&(ile->Fields.tsc), now);
-		//store_int64_asm(&(ile->Fields.tx_bytes), sw_stats.tx_bytes); //these r both u64 ints			
-		//store_int64_asm(&(ile->Fields.rx_bytes), sw_stats.rx_bytes);
-		//store_int64_asm(&(ile->Fields.tx_desc), sw_stats.tx_packets);
-		//store_int64_asm(&(ile->Fields.rx_desc), sw_stats.rx_packets);
+		uint64_t stat_counters[] = {sw_stats.tx_bytes,sw_stats.rx_bytes,sw_stats.tx_packets,sw_stats.rx_packets};
+		store_int64_asm(&(ile->Fields.tx_bytes_stats), stat_counters[0]);
+		store_int64_asm(&(ile->Fields.rx_bytes_stats), stat_counters[1]);
+		store_int64_asm(&(ile->Fields.tx_desc_stats), stat_counters[2]);
+		store_int64_asm(&(ile->Fields.rx_desc_stats), stat_counters[3]);
+
+		//using my bytes/packet counters
+		store_int64_asm(&(ile->Fields.tx_bytes), per_irq_stats.tx_nbytes);
+		store_int64_asm(&(ile->Fields.rx_bytes), per_irq_stats.rx_nbytes);
+		store_int64_asm(&(ile->Fields.tx_desc), per_irq_stats.tx_npkts);
+		store_int64_asm(&(ile->Fields.rx_desc), per_irq_stats.rx_npkts);
+
+		//reset counters to null
+		reset_per_irq_stats();
+
 
 		//sw_stats.tx_bytes = 0;
 		//sw_stats.rx_bytes = 0; //reset counters for next interrupt
@@ -487,17 +482,11 @@ void record_log(){
 				//c stats, cycles, LLCM, instructions
 				read_counters(counters);
 			    store_int64_asm(&(ile->Fields.nllc_miss), counters[1]);
-				//write_nti64_arm(&ile->Fields.nllc_miss, num_miss);
 		  		store_int64_asm(&(ile->Fields.ncycles), counters[2]);
-				//write_nti64_arm_test(&(ile->Fields.ninstructions), num_cycs);      
 			    store_int64_asm(&(ile->Fields.ninstructions), counters[3]);
-
 				//now reset counters
 				reset_counters();
 
-			    //num_ref_cycs = get_refcyc_arm();
-			    //store_int64_asm(&(ile->Fields.ncycles), num_ref_cycs);
-		  		//write_nti64_arm_test(&(ile->Fields.ncycles), num_ref_cycs);
 		  		//need to include all the sleep states
 				//usage = cpu_idle_dev->states_usage;
 			    //c0 = cpu_idle_dev->states_usage[0];
@@ -559,7 +548,6 @@ int create_dir(void) {
 void remove_dir(void) {
 	remove_proc_subtree("arm_stats", NULL);
 }
-
 
 //trying to use this function to get once so dont need to constantly call on irq
 void set_ndev_and_epriv(void){

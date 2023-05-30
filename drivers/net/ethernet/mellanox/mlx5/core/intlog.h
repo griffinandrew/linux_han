@@ -17,7 +17,7 @@
 
 // a single LogEntry is a single row of data in the entire log
 union LogEntry { 
-  long long data[14];
+  long long data[19]; //there are 20 elements
   struct {
     long long tsc;             // rdtsc timestamp of when log entry was collected
     long long ninstructions;   // number of instructions
@@ -38,6 +38,13 @@ union LogEntry {
     unsigned int rx_bytes;     // number of receive bytes
     unsigned int tx_desc;      // number of transmit descriptors
     unsigned int tx_bytes;     // number of transmit bytes
+
+    //the idea is to use the the manual counter here to compare the discrepancy btw the 2
+    unsigned int rx_desc_stats;      // number of receive descriptors
+    unsigned int rx_bytes_stats;     // number of receive bytes
+    unsigned int tx_desc_stats;      // number of transmit descriptors
+    unsigned int tx_bytes_stats;     // number of transmit bytes
+
   } __attribute((packed)) Fields;
 } __attribute((packed));
 
