@@ -186,11 +186,9 @@ static int irq_get(struct mlx5_irq *irq)
 static irqreturn_t irq_int_handler(int irq, void *nh)
 {
 	atomic_notifier_call_chain(nh, 0, NULL);
+	
 	//INTLOG 
-	struct net_device *ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0");
-	struct mlx5e_priv *epriv = netdev_priv(ndev);
-
-	record_log(epriv);
+	record_log();
 	
 	return IRQ_HANDLED;
 }

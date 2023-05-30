@@ -117,7 +117,7 @@ int ct_show(struct seq_file *s, void *v)
 
   	// write to entry in procfs
   	if(ile->Fields.tsc != 0) {
-    	seq_printf(s, "%u %u %u %u %u %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu\n", (unsigned int)*spos, ile->Fields.rx_desc, ile->Fields.rx_bytes, ile->Fields.tx_desc, ile->Fields.tx_bytes, ile->Fields.ninstructions, ile->Fields.ncycles, ile->Fields.nref_cycles, ile->Fields.nllc_miss, ile->Fields.c0, ile->Fields.c1, ile->Fields.c1e, ile->Fields.c3, ile->Fields.c6, ile->Fields.c7, ile->Fields.joules,ile->Fields.tsc);
+    	seq_printf(s, "%u %u %u %u %u %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu\n", (unsigned int)*spos, ile->Fields.rx_desc, ile->Fields.rx_bytes, ile->Fields.tx_desc, ile->Fields.tx_bytes, ile->Fields.ninstructions, ile->Fields.ncycles, ile->Fields.nref_cycles, ile->Fields.nllc_miss, ile->Fields.c0, ile->Fields.c1, ile->Fields.c1e, ile->Fields.c3, ile->Fields.c6, ile->Fields.c7, ile->Fields.pwr, ile->Fields.curr,ile->Fields.tsc, ile->Fields.rx_bytes_stats, ile->Fields.tx_bytes_stats, ile->Fields.tx_desc_stats, ile->Fields.rx_desc_stats);
   	}
   	return 0;
 }
@@ -446,11 +446,24 @@ void record_log(){
 
 		//possibly when initilizing these feilds need to zero 
 		store_int64_asm(&(ile->Fields.tsc), now);
-		uint64_t stat_counters[] = {sw_stats.tx_bytes,sw_stats.rx_bytes,sw_stats.tx_packets,sw_stats.rx_packets};
-		store_int64_asm(&(ile->Fields.tx_bytes_stats), stat_counters[0]);
-		store_int64_asm(&(ile->Fields.rx_bytes_stats), stat_counters[1]);
-		store_int64_asm(&(ile->Fields.tx_desc_stats), stat_counters[2]);
-		store_int64_asm(&(ile->Fields.rx_desc_stats), stat_counters[3]);
+
+		record_curr_sys_irq_stats();
+		diff_sys_stats();
+		//will be neg on first round tho... need to solve ... maybe just preset last to 0?
+
+		uint64_t sys_stat_counters[] = {sys_per_irq_stats.diff_tx_nbytes , sys_per_irq_stats.diff_rx_nbytes , sys_per_irq_stats.diff_tx_npkts, sys_per_irq_stats.diff_rx_npkts};
+
+		uint64_t stat_counters[] = {sw_stats.tx_bytes,sw_stats.rx_bytes,sw_stats.tx_packets,sw_stats.rx_packets};			
+		//store_int64_asm(&(ile->Fields.tx_bytes_stats), stat_counters[0]);
+		//store_int64_asm(&(ile->Fields.rx_bytes_stats), stat_counters[1]);
+		//store_int64_asm(&(ile->Fields.tx_desc_stats), stat_counters[2]);
+		//store_int64_asm(&(ile->Fields.rx_desc_stats), stat_counters[3]);
+
+		store_int64_asm(&(ile->Fields.tx_bytes_stats), sys_stat_counters[0]);
+		store_int64_asm(&(ile->Fields.rx_bytes_stats), sys_stat_counters[1]);
+		store_int64_asm(&(ile->Fields.tx_desc_stats), sys_stat_counters[2]);
+		store_int64_asm(&(ile->Fields.rx_desc_stats), sys_stat_counters[3]);
+
 
 		//using my bytes/packet counters
 		store_int64_asm(&(ile->Fields.tx_bytes), per_irq_stats.tx_nbytes);
@@ -460,6 +473,8 @@ void record_log(){
 
 		//reset counters to null
 		reset_per_irq_stats();
+		//update last to be curr after read
+		update_sys_stats();
 
      	//get last rdtsc
      	last = il->itr_joules_last_tsc;
@@ -495,8 +510,7 @@ void record_log(){
 		        //init ins, cycles, and ref_cyss and then start
 				enable_and_reset_regs();
 		        configure_pmu();
-				//possibly reset sw_stats?
-
+				init_sys_irq_stats();
 				il->perf_started = 1;
 			}		
 	 	}
@@ -541,4 +555,35 @@ void remove_dir(void) {
 void set_ndev_and_epriv(void){
 	ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0");
 	epriv = netdev_priv(ndev);
+}
+
+
+void init_sys_irq_stats(void) {
+	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
+	sys_per_irq_stats.last_rx_nbytes = sw_stats.rx_bytes;
+	sys_per_irq_stats.last_rx_npkts = sw_stats.rx_packets;
+	sys_per_irq_stats.last_tx_nbytes = sw_stats.rx_bytes;
+	sys_per_irq_stats.last_tx_npkts = sw_stats.tx_packets;
+}
+
+void record_curr_sys_irq_stats(void) {
+	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
+	sys_per_irq_stats.curr_rx_nbytes = sw_stats.rx_bytes;
+	sys_per_irq_stats.curr_rx_npkts = sw_stats.rx_packets;
+	sys_per_irq_stats.curr_tx_nbytes = sw_stats.rx_bytes;
+	sys_per_irq_stats.curr_tx_npkts = sw_stats.tx_packets;
+}
+
+void diff_sys_stats(void) {
+	sys_per_irq_stats.diff_rx_nbytes = sys_per_irq_stats.curr_rx_nbytes - sys_per_irq_stats.last_rx_nbytes;
+	sys_per_irq_stats.diff_tx_nbytes = sys_per_irq_stats.curr_tx_nbytes - sys_per_irq_stats.last_tx_nbytes;
+	sys_per_irq_stats.diff_rx_npkts = sys_per_irq_stats.curr_rx_npkts - sys_per_irq_stats.last_rx_npkts;
+	sys_per_irq_stats.diff_tx_npkts = sys_per_irq_stats.curr_tx_npkts - sys_per_irq_stats.last_rx_npkts;
+}
+
+void update_sys_stats(void) {
+	sys_per_irq_stats.last_rx_nbytes = sys_per_irq_stats.curr_rx_nbytes;
+	sys_per_irq_stats.last_rx_npkts = sys_per_irq_stats.curr_rx_npkts;
+	sys_per_irq_stats.last_tx_nbytes = sys_per_irq_stats.curr_tx_nbytes;
+	sys_per_irq_stats.last_tx_npkts = sys_per_irq_stats.curr_tx_npkts;
 }

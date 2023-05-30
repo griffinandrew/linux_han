@@ -17,14 +17,15 @@
 
 // a single LogEntry is a single row of data in the entire log
 union LogEntry { 
-  long long data[19]; //there are 20 elements
+  long long data[20]; //there are 21 elements
   struct {
     long long tsc;             // rdtsc timestamp of when log entry was collected
     long long ninstructions;   // number of instructions
     long long ncycles;         // number of CPU cycles (will be impacted by CPU frequency changes, generally have it as a sanity check)
     long long nref_cycles;     // number of CPU cycles (counts at fixed rate, not impacted by CPU frequency changes)
     long long nllc_miss;       // number of last-level cache misses
-    long long joules;          // current energy reading (Joules) from RAPL MSR register
+    long long pwr;          // current energy reading (Joules) from RAPL MSR register
+    long long curr;
 
     //sleep states will be different across different processors
     long long c0;              // C0 sleep state
@@ -67,7 +68,7 @@ struct Log {
   u32 perf_started;
 } __attribute__((packed, aligned(CACHE_LINE_SIZE)));
 
-
+//this is my own counting handy work, could be garbage tho, relies on  rq stats for rx bytes / packs
 struct txrx_stats {
   unsigned int tx_nbytes;
   unsigned int tx_npkts;
@@ -75,15 +76,35 @@ struct txrx_stats {
   unsigned int rx_npkts;
 } __attribute((packed)); //stay close to other structs for used for this purpose
 
+
+struct sys_txrx_stats {
+  unsigned int last_tx_nbytes = 0;
+  unsigned int last_tx_npkts = 0;
+  unsigned int last_rx_nbytes = 0;
+  unsigned int last_rx_npkts = 0;
+  unsigned int curr_tx_nbytes;
+  unsigned int curr_tx_npkts;
+  unsigned int curr_rx_nbytes;
+  unsigned int curr_rx_npkts;
+
+  unsigned int diff_tx_nbytes;
+  unsigned int diff_tx_npkts;
+  unsigned int diff_rx_nbytes;
+  unsigned int diff_rx_npkts;
+} __attribute((packed)); //stay close to other structs for used for this purpose
+
+
 struct smpro_pwr {
-  int smpro_power; //declare var to hold curr power level?
-  int smpro_curr; //declare var to hold curr power level?
+  int smpro_power; //declare var to hold power level
+  int smpro_curr; //declare var to hold curr level
 } __attribute((packed)); //stay close to other structs for used for this purpose
 
 extern struct smpro_pwr pwr;
 extern struct Log logs[NUM_CORES]; //for the 80 cores
 extern unsigned int tsc_per_milli;
+
 extern struct txrx_stats per_irq_stats;
+extern struct sys_txrx_stats sys_per_irq_stats;
 
 extern const struct file_operations ct_file_ops_intlog;
 extern struct seq_operations my_seq_ops_intlog; //both declared in c file
@@ -123,3 +144,12 @@ void read_counters(uint64_t* values);
 void configure_pmu(void);
 
 void set_ndev_and_epriv(void); //perhaps could be static?
+
+//*********************** tracking of stats per irq ********************
+void diff_sys_stats(void);
+
+void record_curr_sys_irq_stats(void);
+
+void init_sys_irq_stats(void);
+
+void update_sys_stats(void)
