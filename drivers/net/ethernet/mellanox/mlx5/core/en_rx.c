@@ -2381,6 +2381,12 @@ int mlx5e_poll_rx_cq(struct mlx5e_cq *cq, int budget)
 	/* ensure cq space is freed before enabling more cqes */
 	wmb();
 
+	//intlog :this is sadly relying on using the stats feature of the driver
+	struct mlx5e_rq_stats *stats = &rq->stats;
+	uint64_t npacks = stats->packets;
+	uint64_t nbytes = stats->bytes;
+	record_rx_poll_info(npacks, nbytes);
+	
 	return work_done;
 }
 
