@@ -461,12 +461,6 @@ void record_log(){
 		//reset counters to null
 		reset_per_irq_stats();
 
-
-		//sw_stats.tx_bytes = 0;
-		//sw_stats.rx_bytes = 0; //reset counters for next interrupt
-		//sw_stats.tx_packets = 0;
-		//sw_stats.rx_packets = 0; 
-
      	//get last rdtsc
      	last = il->itr_joules_last_tsc;
 		
@@ -494,7 +488,6 @@ void record_log(){
 		  		//c2 = cpu_idle_dev->states_usage[2]; 
 		  	    //c3 = cpu_idle_dev->states_usage[3];
 		  		//log hardware stats here
-		  		
 		    }
 			if(il->perf_started == 0) 
 			{
@@ -503,11 +496,6 @@ void record_log(){
 				enable_and_reset_regs();
 		        configure_pmu();
 				//possibly reset sw_stats?
-
-			//sw_stats.tx_bytes = 0;
-			//sw_stats.rx_bytes = 0; //reset counters for next interrupt
-			//sw_stats.tx_packets = 0;
-			//sw_stats.rx_packets = 0; 
 
 				il->perf_started = 1;
 			}		

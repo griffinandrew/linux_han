@@ -15,6 +15,10 @@
 #include <linux/property.h>
 #include <linux/regmap.h>
 
+//intlog 
+#include "intlog.h" //so can access power var to str power, not sure what the read freq is tho or how to trigger these functions tho
+//added to include path
+
 /* Logical Power Sensor Registers */
 #define SOC_TEMP		0x10
 #define SOC_VRD_TEMP		0x11
@@ -260,6 +264,9 @@ static int smpro_read_curr(struct device *dev, u32 attr, int channel, long *val)
 			return ret;
 		/* Scale reported by the hardware is 1mA */
 		*val = value & 0x7fff;
+		//intlog
+		//record current
+		pwr.smpro_curr = *val;
 		return 0;
 	default:
 		return -EOPNOTSUPP;
@@ -283,6 +290,10 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel, long *val
 			return ret;
 		/* 10-bit value */
 		*val_pwr = (val & 0x3ff) * 1000000 + (val_mw & 0x3ff) * 1000;
+		//intlog 
+		//set the value of pwr to power var to be accessed in intlog
+		//not sure about this update freq tho
+		pwr.smpro_power = *val_pwr;
 		return 0;
 
 	default:

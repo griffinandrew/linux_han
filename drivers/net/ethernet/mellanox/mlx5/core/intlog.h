@@ -75,7 +75,12 @@ struct txrx_stats {
   unsigned int rx_npkts;
 } __attribute((packed)); //stay close to other structs for used for this purpose
 
+struct smpro_pwr {
+  int smpro_power; //declare var to hold curr power level?
+  int smpro_curr; //declare var to hold curr power level?
+} __attribute((packed)); //stay close to other structs for used for this purpose
 
+extern struct smpro_pwr pwr;
 extern struct Log logs[NUM_CORES]; //for the 80 cores
 extern unsigned int tsc_per_milli;
 extern struct txrx_stats per_irq_stats;
