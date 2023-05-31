@@ -29,6 +29,8 @@
 #include <linux/fs.h>
 
 
+
+
 /*************************************************************************
  * intLog: access tsc tick rate
  *************************************************************************/
@@ -177,6 +179,7 @@ int ct_open(struct inode *inode, struct file *file)
 /*************************** defining structs for reaping data ***********************************/
 /*************************************************************************************************/
 
+/*
 const struct file_operations ct_file_ops_intlog =
 {
 	.owner   = THIS_MODULE,
@@ -185,6 +188,24 @@ const struct file_operations ct_file_ops_intlog =
  	.llseek  = seq_lseek,
  	.release = seq_release
 };
+*/
+
+#ifdef HAVE_PROC_OPS
+static const struct proc_ops skynet_ops = {
+  .proc_open = ct_open,
+  .proc_read = seq_read,
+  .proc_lseek = seq_lseek,
+  .proc_release = seq_release,
+};
+#else
+static const struct file_operations skynet_ops = {
+  .owner = THIS_MODULE,
+  .open = ct_open,
+  .read = seq_read,
+  .llseek = seq_lseek,
+  .release = seq_release,
+};
+#endif
 
 struct seq_operations my_seq_ops_intlog =
 {

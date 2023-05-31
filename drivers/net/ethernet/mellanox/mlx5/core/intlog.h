@@ -14,6 +14,12 @@
 #include <linux/sysfs.h>
 #include <linux/types.h>
 #include <linux/fs.h>
+#include <linux/version.h>
+
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
+#define HAVE_PROC_OPS
+#endif
 
 // a single LogEntry is a single row of data in the entire log
 union LogEntry { 
@@ -24,8 +30,8 @@ union LogEntry {
     long long ncycles;         // number of CPU cycles (will be impacted by CPU frequency changes, generally have it as a sanity check)
     long long nref_cycles;     // number of CPU cycles (counts at fixed rate, not impacted by CPU frequency changes)
     long long nllc_miss;       // number of last-level cache misses
-    long long unsigned pwr;          // current energy reading (Joules) from RAPL MSR register
-    long long unsigned curr;
+    long long pwr;          // current energy reading (Joules) from RAPL MSR register
+    long long curr;
 
     //sleep states will be different across different processors
     long long c0;              // C0 sleep state
