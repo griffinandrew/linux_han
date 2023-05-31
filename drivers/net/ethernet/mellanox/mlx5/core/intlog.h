@@ -24,8 +24,8 @@ union LogEntry {
     long long ncycles;         // number of CPU cycles (will be impacted by CPU frequency changes, generally have it as a sanity check)
     long long nref_cycles;     // number of CPU cycles (counts at fixed rate, not impacted by CPU frequency changes)
     long long nllc_miss;       // number of last-level cache misses
-    long long pwr;          // current energy reading (Joules) from RAPL MSR register
-    long long curr;
+    long long unsigned pwr;          // current energy reading (Joules) from RAPL MSR register
+    long long unsigned curr;
 
     //sleep states will be different across different processors
     long long c0;              // C0 sleep state
@@ -153,4 +153,10 @@ void record_curr_sys_irq_stats(void);
 
 void init_sys_irq_stats(void);
 
-void update_sys_stats(void)
+void update_sys_stats(void);
+
+void record_tx_poll_info(u16 npkts, u32 nbytes);
+
+void record_rx_poll_info(uint64_t npkts, uint64_t nbytes);
+
+void reset_per_irq_stats(void);

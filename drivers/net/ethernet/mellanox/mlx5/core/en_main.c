@@ -70,6 +70,9 @@
 #include "qos.h"
 #include "en/trap.h"
 
+//intlog
+#include "intlog.h"
+
 bool mlx5e_check_fragmented_striding_rq_cap(struct mlx5_core_dev *mdev, u8 page_shift,
 					    enum mlx5e_mpwrq_umr_mode umr_mode)
 {

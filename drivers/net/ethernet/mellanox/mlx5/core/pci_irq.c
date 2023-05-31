@@ -49,7 +49,7 @@ struct mlx5_irq_table {
  * @dev: PF to work on
  * @num_vfs: Number of enabled VFs
  */
-int mlx5_get_default_msix_vec_count(struct mlx5_core_dev *dev, int num_vfs)
+int mlx5_get_default_msix_vec_count(struct mlx5_core_dev *dev, int num_vfs) 
 {
 	int num_vf_msix, min_msix, max_msix;
 

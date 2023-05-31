@@ -54,9 +54,9 @@ struct proc_dir_entry *stats_dir;
 struct proc_dir_entry *stats_core_dir;
 ////////////////////////////////////////////////////////////////
 
-extern struct sys_txrx_stats ;
+extern struct sys_txrx_stats sys_per_irq_stats;
 
-struct sys_txrx_stats sys_per_irq_stats= {
+struct sys_txrx_stats sys_per_irq_stats = {
     .last_tx_nbytes = 0,
     .last_tx_npkts = 0,
 	.last_rx_npkts = 0,
@@ -126,7 +126,30 @@ int ct_show(struct seq_file *s, void *v)
 
   	// write to entry in procfs
   	if(ile->Fields.tsc != 0) {
-    	seq_printf(s, "%u %u %u %u %u %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu\n", (unsigned int)*spos, ile->Fields.rx_desc, ile->Fields.rx_bytes, ile->Fields.tx_desc, ile->Fields.tx_bytes, ile->Fields.ninstructions, ile->Fields.ncycles, ile->Fields.nref_cycles, ile->Fields.nllc_miss, ile->Fields.c0, ile->Fields.c1, ile->Fields.c1e, ile->Fields.c3, ile->Fields.c6, ile->Fields.c7, ile->Fields.pwr, ile->Fields.curr,ile->Fields.tsc, ile->Fields.rx_bytes_stats, ile->Fields.tx_bytes_stats, ile->Fields.tx_desc_stats, ile->Fields.rx_desc_stats);
+    	//seq_printf(s, "%u %u %u %u %u %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %u %u %u %u %llu\n", (unsigned int)*spos, ile->Fields.rx_desc, ile->Fields.rx_bytes, ile->Fields.tx_desc, ile->Fields.tx_bytes, ile->Fields.ninstructions, ile->Fields.ncycles, ile->Fields.nref_cycles, ile->Fields.nllc_miss, ile->Fields.c0, ile->Fields.c1, ile->Fields.c1e, ile->Fields.c3, ile->Fields.c6, ile->Fields.c7, ile->Fields.pwr, ile->Fields.curr,ile->Fields.tsc, ile->Fields.rx_bytes_stats, ile->Fields.tx_bytes_stats, ile->Fields.tx_desc_stats, ile->Fields.rx_desc_stats);
+		seq_printf(s, "%u %u %u %u %u %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %u %u %u %u\n", 
+           (unsigned int)*spos, 
+           ile->Fields.rx_desc, 
+           ile->Fields.rx_bytes, 
+           ile->Fields.tx_desc, 
+           ile->Fields.tx_bytes, 
+           (unsigned long long int)ile->Fields.ninstructions, 
+           (unsigned long long int)ile->Fields.ncycles, 
+           (unsigned long long int)ile->Fields.nref_cycles, 
+           (unsigned long long int)ile->Fields.nllc_miss, 
+           (unsigned long long int)ile->Fields.c0, 
+           (unsigned long long int)ile->Fields.c1, 
+           (unsigned long long int)ile->Fields.c1e, 
+           (unsigned long long int)ile->Fields.c3, 
+           (unsigned long long int)ile->Fields.c6, 
+           (unsigned long long int)ile->Fields.c7, 
+           (unsigned long long int)ile->Fields.pwr, 
+           (unsigned long long int)ile->Fields.curr,
+           (unsigned long long int)ile->Fields.tsc, 
+           ile->Fields.rx_bytes_stats, 
+           ile->Fields.tx_bytes_stats, 
+           ile->Fields.tx_desc_stats, 
+           ile->Fields.rx_desc_stats);
   	}
   	return 0;
 }
@@ -143,7 +166,8 @@ int ct_open(struct inode *inode, struct file *file)
   	ret = seq_open(file, &my_seq_ops_intlog);
   	if(ret == 0) {
   		struct seq_file *m = file->private_data;
-		m->private = PDE_DATA(inode);
+		//m->private = PDE_DATA(inode);
+		m->private = pde_data(inode);
   	}
   
   	return ret; 

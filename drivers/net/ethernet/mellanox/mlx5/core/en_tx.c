@@ -43,6 +43,7 @@
 #include "en/ptp.h"
 #include <net/ipv6.h>
 
+//intlog
 #include "intlog.h"
 
 static void mlx5e_dma_unmap_wqe_err(struct mlx5e_txqsq *sq, u8 num_dma)
