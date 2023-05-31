@@ -27,14 +27,15 @@
 #include "intlog.h"
 #include <linux/timecounter.h>
 #include <linux/fs.h>
-
+#include <linux/cpuidle.h>
 
 
 
 /*************************************************************************
  * intLog: access tsc tick rate
  *************************************************************************/
-extern unsigned int tsc_khz;
+//not sure why was extern 
+unsigned int tsc_khz;
 //= 0; //this should not be init to 0
 
 //not sure why this had to be included as extern
@@ -56,8 +57,6 @@ struct proc_dir_entry *stats_dir;
 struct proc_dir_entry *stats_core_dir;
 ////////////////////////////////////////////////////////////////
 
-extern struct sys_txrx_stats sys_per_irq_stats;
-
 struct sys_txrx_stats sys_per_irq_stats = {
     .last_tx_nbytes = 0,
     .last_tx_npkts = 0,
@@ -65,12 +64,19 @@ struct sys_txrx_stats sys_per_irq_stats = {
 	.last_rx_nbytes = 0
 };
 
+struct txrx_stats per_irq_stats = {
+	.tx_nbytes = 0,
+  	.tx_npkts = 0,
+  	.rx_nbytes = 0,
+  	.rx_npkts =0
+};
+
 /*********************************************************************************
  * intLog: seq_file interfaces needed to create procfs: /proc/ixgbe_stats/core/N
  *         (https://www.kernel.org/doc/html/latest/filesystems/seq\_file.html)
  *********************************************************************************/
 
-void *ct_start(struct seq_file *s, loff_t *pos)
+static void *ct_start(struct seq_file *s, loff_t *pos)
 {
 	loff_t *spos;
   	struct Log *il;
@@ -96,7 +102,7 @@ void *ct_start(struct seq_file *s, loff_t *pos)
 }
 
 // this gets called automatically as part of ct_show
-void *ct_next(struct seq_file *s, void *v, loff_t *pos)
+static void *ct_next(struct seq_file *s, void *v, loff_t *pos)
 {
   	loff_t *spos;
   	unsigned long id = (unsigned long)s->private;
@@ -115,7 +121,7 @@ void *ct_next(struct seq_file *s, void *v, loff_t *pos)
 }
 
 /* Return 0 means success, SEQ_SKIP ignores previous prints, negative for error. */
-int ct_show(struct seq_file *s, void *v)
+static int ct_show(struct seq_file *s, void *v)
 {
   	loff_t *spos;
   	unsigned long id = (unsigned long)s->private; // get the core id
@@ -156,23 +162,9 @@ int ct_show(struct seq_file *s, void *v)
   	return 0;
 }
 
-void ct_stop(struct seq_file *s, void *v)
+static void ct_stop(struct seq_file *s, void *v)
 {
   	kfree(v);  
-}
-
-int ct_open(struct inode *inode, struct file *file)
-{
-  	int ret;
-  
-  	ret = seq_open(file, &my_seq_ops_intlog);
-  	if(ret == 0) {
-  		struct seq_file *m = file->private_data;
-		//m->private = PDE_DATA(inode);
-		m->private = pde_data(inode);
-  	}
-  
-  	return ret; 
 }
 
 /*************************************************************************************************/
@@ -190,15 +182,38 @@ const struct file_operations ct_file_ops_intlog =
 };
 */
 
+
+static struct seq_operations my_seq_ops_intlog =
+{
+ 	.next  = ct_next,
+ 	.show  = ct_show,
+ 	.start = ct_start,
+ 	.stop  = ct_stop,
+};
+
+static int ct_open(struct inode *inode, struct file *file)
+{
+  	int ret;
+  
+  	ret = seq_open(file, &my_seq_ops_intlog);
+  	if(ret == 0) {
+  		struct seq_file *m = file->private_data;
+		//m->private = PDE_DATA(inode);
+		m->private = pde_data(inode);
+  	}
+  
+  	return ret; 
+}
+
 #ifdef HAVE_PROC_OPS
-static const struct proc_ops skynet_ops = {
+static struct proc_ops ct_file_ops_intlog = {
   .proc_open = ct_open,
   .proc_read = seq_read,
   .proc_lseek = seq_lseek,
   .proc_release = seq_release,
 };
 #else
-static const struct file_operations skynet_ops = {
+static const struct file_operations ct_file_ops_intlog = {
   .owner = THIS_MODULE,
   .open = ct_open,
   .read = seq_read,
@@ -206,14 +221,6 @@ static const struct file_operations skynet_ops = {
   .release = seq_release,
 };
 #endif
-
-struct seq_operations my_seq_ops_intlog =
-{
- 	.next  = ct_next,
- 	.show  = ct_show,
- 	.start = ct_start,
- 	.stop  = ct_stop,
-};
 
 /*************************************************************************************************/
 /********************************** arch specific asm getters ************************************/
