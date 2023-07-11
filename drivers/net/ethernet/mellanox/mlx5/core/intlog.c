@@ -526,7 +526,7 @@ void diff_sys_swstats_irq_stats(void) {
 	sys_swstats_irq_stats.diff_rx_nbytes = sys_swstats_irq_stats.curr_rx_nbytes - sys_swstats_irq_stats.last_rx_nbytes;
 	sys_swstats_irq_stats.diff_tx_nbytes = sys_swstats_irq_stats.curr_tx_nbytes - sys_swstats_irq_stats.last_tx_nbytes;
 	sys_swstats_irq_stats.diff_rx_npkts = sys_swstats_irq_stats.curr_rx_npkts - sys_swstats_irq_stats.last_rx_npkts;
-	sys_swstats_irq_stats.diff_tx_npkts = sys_swstats_irq_stats.curr_tx_npkts - sys_swstats_irq_stats.last_rx_npkts;
+	sys_swstats_irq_stats.diff_tx_npkts = sys_swstats_irq_stats.curr_tx_npkts - sys_swstats_irq_stats.last_tx_npkts;
 }
 
 void update_sys_swstats_irq_stats(void) {
@@ -548,8 +548,8 @@ void record_log(){
    	union LogEntry *ile;
    	uint64_t now = 0, last = 0;
    	int icnt = 0;
-	uint64_t counters[3];
-	uint64_t stat_counters[3];
+	//uint64_t counters[3];
+	//uint64_t stat_counters[3];
 	//long long c0, c1, c2;
 	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
 	//struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
@@ -591,32 +591,24 @@ void record_log(){
 		diff_sys_stats();
 		//will be neg on first round tho... need to solve ... maybe just preset last to 0?
 		
-		//NOTE: these r calculated
-		uint64_t sys_stat_counters[] = {sys_per_irq_stats.diff_tx_nbytes , sys_per_irq_stats.diff_rx_nbytes , sys_per_irq_stats.diff_tx_npkts, sys_per_irq_stats.diff_rx_npkts};
+		uint64_t sys_irq_swstat_stats[] = {sys_swstats_irq_stats.diff_tx_nbytes , sys_swstats_irq_stats.diff_rx_nbytes , sys_swstats_irq_stats.diff_tx_npkts, sys_swstats_irq_stats.diff_rx_npkts};
 		
-		uint64_t stat_counters[] = {sw_stats.tx_bytes,sw_stats.rx_bytes,sw_stats.tx_packets,sw_stats.rx_packets};			
+		uint64_t poll_stats_irq[] = {poll_irq_stats.tx_nbytes, poll_irq_stats.rx_nbytes, poll_irq_stats.tx_npkts, poll_irq_stats.rx_npkts};			
 		
-		store_int64_asm(&(ile->Fields.tx_bytes), stat_counters[0]);
-		store_int64_asm(&(ile->Fields.rx_bytes), stat_counters[1]);
-		store_int64_asm(&(ile->Fields.tx_desc), stat_counters[2]);
-		store_int64_asm(&(ile->Fields.rx_desc), stat_counters[3]);
+		store_int64_asm(&(ile->Fields.tx_bytes_poll), poll_stats_irq[0]);
+		store_int64_asm(&(ile->Fields.rx_bytes_poll), poll_stats_irq[1]);
+		store_int64_asm(&(ile->Fields.tx_desc_poll), poll_stats_irq[2]);
+		store_int64_asm(&(ile->Fields.rx_desc_poll), poll_stats_irq[3]);
 
-		store_int64_asm(&(ile->Fields.tx_bytes_stats), sys_stat_counters[0]);
-		store_int64_asm(&(ile->Fields.rx_bytes_stats), sys_stat_counters[1]);
-		store_int64_asm(&(ile->Fields.tx_desc_stats), sys_stat_counters[2]);
-		store_int64_asm(&(ile->Fields.rx_desc_stats), sys_stat_counters[3]);
-
-
-		//using my bytes/packet counters
-		store_int64_asm(&(ile->Fields.tx_bytes), per_irq_stats.tx_nbytes);
-		store_int64_asm(&(ile->Fields.rx_bytes), per_irq_stats.rx_nbytes);
-		store_int64_asm(&(ile->Fields.tx_desc), per_irq_stats.tx_npkts);
-		store_int64_asm(&(ile->Fields.rx_desc), per_irq_stats.rx_npkts);
+		store_int64_asm(&(ile->Fields.tx_bytes_stats), sys_irq_swstat_stats[0]);
+		store_int64_asm(&(ile->Fields.rx_bytes_stats), sys_irq_swstat_stats[1]);
+		store_int64_asm(&(ile->Fields.tx_desc_stats), sys_irq_swstat_stats[2]);
+		store_int64_asm(&(ile->Fields.rx_desc_stats), sys_irq_swstat_stats[3]);
 
 		//reset counters to null
-		reset_per_irq_stats();
+		reset_poll_irq_stats();
 		//update last to be curr after read
-		update_sys_stats();
+		update_sys_swstats_irq_stats();
 
      	//get last rdtsc
      	last = il->itr_joules_last_tsc;
@@ -631,6 +623,7 @@ void record_log(){
 	   
      		if(il->perf_started) 
 			{
+				uint64_t counters[3];
 				//c stats, cycles, LLCM, instructions
 				read_counters(counters);
 			    store_int64_asm(&(ile->Fields.nllc_miss), counters[1]);
@@ -653,7 +646,7 @@ void record_log(){
 		        //init ins, cycles, and ref_cyss and then start
 				enable_and_reset_regs();
 		        configure_pmu();
-				init_sys_irq_stats();
+				init_sys_swstats_irq_stats();
 				il->perf_started = 1;
 			}		
 	 	}

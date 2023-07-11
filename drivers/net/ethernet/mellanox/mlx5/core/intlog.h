@@ -41,10 +41,10 @@ union LogEntry {
     long long c6;              // C6 sleep state
     long long c7;              // C7 sleep state
     
-    unsigned int rx_desc;      // number of receive descriptors
-    unsigned int rx_bytes;     // number of receive bytes
-    unsigned int tx_desc;      // number of transmit descriptors
-    unsigned int tx_bytes;     // number of transmit bytes
+    unsigned int rx_desc_poll;      // number of receive descriptors
+    unsigned int rx_bytes_poll;     // number of receive bytes
+    unsigned int tx_desc_poll;      // number of transmit descriptors
+    unsigned int tx_bytes_poll;     // number of transmit bytes
 
     //the idea is to use the the manual counter here to compare the discrepancy btw the 2
     unsigned int rx_desc_stats;      // number of receive descriptors
