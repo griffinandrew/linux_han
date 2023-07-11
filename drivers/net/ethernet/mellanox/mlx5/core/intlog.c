@@ -8,6 +8,8 @@
  *************************************************************************/
 //#include <linux/cpuidle.h>
 
+//#include <asm/cpuidle.h>
+
 /*************************************************************************
  * intLog: to create procfs: /proc/ixgbe_stats/core/N //eventually
  *************************************************************************/
@@ -55,18 +57,23 @@ struct proc_dir_entry *stats_dir;
 struct proc_dir_entry *stats_core_dir;
 ////////////////////////////////////////////////////////////////
 
-struct sys_txrx_stats sys_per_irq_stats = {
+struct sys_swstats_stats sys_swstats_irq_stats = {
     .last_tx_nbytes = 0,
     .last_tx_npkts = 0,
 	.last_rx_npkts = 0,
 	.last_rx_nbytes = 0
 };
 
-struct txrx_stats per_irq_stats = {
+struct poll_stats poll_irq_stats = {
 	.tx_nbytes = 0,
   	.tx_npkts = 0,
   	.rx_nbytes = 0,
-  	.rx_npkts =0
+  	.rx_npkts = 0
+};
+
+struct smpro_pwr pwr = {
+        .smpro_power = 0,
+        .smpro_curr = 0,
 };
 
 /*********************************************************************************
@@ -250,15 +257,6 @@ static inline uint64_t get_rdtsc_arm_phys(void){
   	return tsc;
 }
 
-//other possible implementaion to get timestamp
-//gets virtual timer
-//from CNTV_TVAL to CNTV_TVAL_EL0
-static inline uint64_t get_rdtsc_arm_vir(void) {
-	uint64_t tsc;
-	asm volatile("mrs %0, CNTV_TVAL_EL0" : "=r" (tsc));
-  	return tsc;
-}
-
 static inline void enable_and_reset_regs(void){
 	uint32_t pmcr_val = 0;
 	pmcr_val |= (1 << 0);  // Enable all counters 
@@ -320,14 +318,6 @@ void read_counters(uint64_t* values)
     values[2] = pmxevcntr2_val;
 }
 
-/* //think this function is garbage
-//gets the number of ref cycles (phyiscal count register)
-static inline long long get_refcyc_arm(void){
-  	long long val;
-  	asm volatile("msr %0, CNTPCT_EL0 " : "=r" (val));
-  	return val; 
-} //registeR CNTVCT_EL0 IS NON privilged virtual version of this
-*/
 /*************************************************************************************************/
 //*********************************** ARCH SPEC NTI **********************************************
 //used for non-temporal store instruction so our logging doesnt interfere with performance
@@ -370,8 +360,13 @@ static inline void write_nti32_intel(void *p, const uint32_t v) {
 /*
 void cpu_idle_states(void) {
     //struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
-    struct cpuidle_device *dev = cpuidle_get_device();
-    struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);  //not sure if this is valid way to get this
+    //struct cpuidle_device *dev = cpuidle_get_device();
+    //struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);  //not sure if this is valid way to get this
+    struct cpuidle_device *dev;
+    struct cpuidle_driver *drv;
+    dev = this_cpu_read(cpuidle_devices);
+    drv = cpuidle_get_cpu_driver(dev);
+    
     //print states
     int i;
     printk(KERN_INFO "cpuidle stats state_count=%d\n", drv->state_count);
@@ -379,7 +374,6 @@ void cpu_idle_states(void) {
         printk(KERN_INFO "i=%d name=%s exit_latency=%u target_residency=%u power_usage_mW=%i\n", i, drv->states[i].name, drv->states[i].exit_latency, drv->states[i].target_residency, drv->states[i].power_usage);
     }
 }
-
 */
 
 /*************************************************************************************************/
@@ -391,7 +385,9 @@ void cpu_idle_states(void) {
 int alloc_log_space(void) {                                                                                                                                                                                                        
 	int flag = 0;
 	int i = 0;
-    uint64_t now;                                                                                                                                                                                                                    
+    uint64_t now;
+
+    //cpu_idle_states();    
     printk(KERN_INFO "****************** intLog init *******************");                                                                                                                                                    
     while (i < NUM_CORES)   
     {                
@@ -442,20 +438,20 @@ void dealloc_log_space(void){
 
 
 void record_tx_poll_info(u16 npkts, u32 nbytes) { //gonna have to cast types
-	per_irq_stats.tx_nbytes += (unsigned int)nbytes;
-	per_irq_stats.tx_npkts += (unsigned int)npkts;
+	poll_irq_stats.tx_nbytes += (unsigned int)nbytes;
+	poll_irq_stats.tx_npkts += (unsigned int)npkts;
 }
 
 void record_rx_poll_info(uint64_t npkts, uint64_t nbytes) {
-	per_irq_stats.rx_nbytes += (unsigned int)nbytes;
-	per_irq_stats.rx_npkts += (unsigned int)npkts;
+	poll_irq_stats.rx_nbytes += (unsigned int)nbytes;
+	poll_irq_stats.rx_npkts += (unsigned int)npkts;
 }
 
-void reset_per_irq_stats(void) {
-	per_irq_stats.tx_nbytes = 0;
-	per_irq_stats.tx_npkts = 0;
-	per_irq_stats.rx_nbytes = 0;
-	per_irq_stats.rx_npkts = 0;
+void reset_poll_irq_stats(void) {
+	poll_irq_stats.tx_nbytes = 0;
+	poll_irq_stats.tx_npkts = 0;
+	poll_irq_stats.rx_nbytes = 0;
+	poll_irq_stats.rx_npkts = 0;
 }
 
 //in case can't use sw_stats
@@ -498,7 +494,7 @@ void remove_dir(void) {
 
 //trying to use this function to get once so dont need to constantly call on irq
 void set_ndev_and_epriv(void){
-	ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0");
+	ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0"); //dont think this is mlx nic 
 	epriv = netdev_priv(ndev);
 }
 
@@ -508,34 +504,37 @@ void set_ndev_and_epriv(void){
 /********************************* use sys stats *************************************************/
 /*************************************************************************************************/
 
-void init_sys_irq_stats(void) {
+void init_sys_swstats_irq_stats(void) {
 	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
-	sys_per_irq_stats.last_rx_nbytes = sw_stats.rx_bytes;
-	sys_per_irq_stats.last_rx_npkts = sw_stats.rx_packets;
-	sys_per_irq_stats.last_tx_nbytes = sw_stats.rx_bytes;
-	sys_per_irq_stats.last_tx_npkts = sw_stats.tx_packets;
+	sys_swstats_irq_stats.last_rx_nbytes = sw_stats.rx_bytes;
+	sys_swstats_irq_stats.last_rx_npkts = sw_stats.rx_packets;
+	sys_swstats_irq_stats.last_tx_nbytes = sw_stats.tx_bytes;
+	sys_swstats_irq_stats.last_tx_npkts = sw_stats.tx_packets;
 }
 
-void record_curr_sys_irq_stats(void) {
+
+//in second thouight is not really needed
+void record_curr_sys_swstats_irq_stats(void) {
 	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
-	sys_per_irq_stats.curr_rx_nbytes = sw_stats.rx_bytes;
-	sys_per_irq_stats.curr_rx_npkts = sw_stats.rx_packets;
-	sys_per_irq_stats.curr_tx_nbytes = sw_stats.rx_bytes;
-	sys_per_irq_stats.curr_tx_npkts = sw_stats.tx_packets;
+	sys_swstats_irq_stats.curr_rx_nbytes = sw_stats.rx_bytes;
+	sys_swstats_irq_stats.curr_rx_npkts = sw_stats.rx_packets;
+	sys_swstats_irq_stats.curr_tx_nbytes = sw_stats.tx_bytes;
+	sys_swstats_irq_stats.curr_tx_npkts = sw_stats.tx_packets;
 }
 
-void diff_sys_stats(void) {
-	sys_per_irq_stats.diff_rx_nbytes = sys_per_irq_stats.curr_rx_nbytes - sys_per_irq_stats.last_rx_nbytes;
-	sys_per_irq_stats.diff_tx_nbytes = sys_per_irq_stats.curr_tx_nbytes - sys_per_irq_stats.last_tx_nbytes;
-	sys_per_irq_stats.diff_rx_npkts = sys_per_irq_stats.curr_rx_npkts - sys_per_irq_stats.last_rx_npkts;
-	sys_per_irq_stats.diff_tx_npkts = sys_per_irq_stats.curr_tx_npkts - sys_per_irq_stats.last_rx_npkts;
+void diff_sys_swstats_irq_stats(void) {
+	sys_swstats_irq_stats.diff_rx_nbytes = sys_swstats_irq_stats.curr_rx_nbytes - sys_swstats_irq_stats.last_rx_nbytes;
+	sys_swstats_irq_stats.diff_tx_nbytes = sys_swstats_irq_stats.curr_tx_nbytes - sys_swstats_irq_stats.last_tx_nbytes;
+	sys_swstats_irq_stats.diff_rx_npkts = sys_swstats_irq_stats.curr_rx_npkts - sys_swstats_irq_stats.last_rx_npkts;
+	sys_swstats_irq_stats.diff_tx_npkts = sys_swstats_irq_stats.curr_tx_npkts - sys_swstats_irq_stats.last_rx_npkts;
 }
 
-void update_sys_stats(void) {
-	sys_per_irq_stats.last_rx_nbytes = sys_per_irq_stats.curr_rx_nbytes;
-	sys_per_irq_stats.last_rx_npkts = sys_per_irq_stats.curr_rx_npkts;
-	sys_per_irq_stats.last_tx_nbytes = sys_per_irq_stats.curr_tx_nbytes;
-	sys_per_irq_stats.last_tx_npkts = sys_per_irq_stats.curr_tx_npkts;
+void update_sys_swstats_irq_stats(void) {
+	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
+	sys_swstats_irq_stats.last_rx_nbytes = sw_stats.rx_bytes;
+	sys_swstats_irq_stats.last_rx_npkts = sw_stats.rx_packets;
+	sys_swstats_irq_stats.last_tx_nbytes = sw_stats.tx_bytes;
+	sys_swstats_irq_stats.last_tx_npkts = sw_stats.tx_packets;
 }
 
 
@@ -591,14 +590,16 @@ void record_log(){
 		record_curr_sys_irq_stats();
 		diff_sys_stats();
 		//will be neg on first round tho... need to solve ... maybe just preset last to 0?
-
+		
+		//NOTE: these r calculated
 		uint64_t sys_stat_counters[] = {sys_per_irq_stats.diff_tx_nbytes , sys_per_irq_stats.diff_rx_nbytes , sys_per_irq_stats.diff_tx_npkts, sys_per_irq_stats.diff_rx_npkts};
-
+		
 		uint64_t stat_counters[] = {sw_stats.tx_bytes,sw_stats.rx_bytes,sw_stats.tx_packets,sw_stats.rx_packets};			
-		//store_int64_asm(&(ile->Fields.tx_bytes_stats), stat_counters[0]);
-		//store_int64_asm(&(ile->Fields.rx_bytes_stats), stat_counters[1]);
-		//store_int64_asm(&(ile->Fields.tx_desc_stats), stat_counters[2]);
-		//store_int64_asm(&(ile->Fields.rx_desc_stats), stat_counters[3]);
+		
+		store_int64_asm(&(ile->Fields.tx_bytes), stat_counters[0]);
+		store_int64_asm(&(ile->Fields.rx_bytes), stat_counters[1]);
+		store_int64_asm(&(ile->Fields.tx_desc), stat_counters[2]);
+		store_int64_asm(&(ile->Fields.rx_desc), stat_counters[3]);
 
 		store_int64_asm(&(ile->Fields.tx_bytes_stats), sys_stat_counters[0]);
 		store_int64_asm(&(ile->Fields.rx_bytes_stats), sys_stat_counters[1]);
@@ -625,7 +626,8 @@ void record_log(){
 		    //store current rdtsc
 		    il->itr_joules_last_tsc = now;
 	     	//first get the joules
-			//store_int64_asm(&(ile->Fields.joules), energy);
+	        store_int64_asm(&(ile->Fields.pwr), pwr.smpro_power);
+		store_int64_asm(&(ile->Fields.curr), pwr.smpro_curr);
 	   
      		if(il->perf_started) 
 			{

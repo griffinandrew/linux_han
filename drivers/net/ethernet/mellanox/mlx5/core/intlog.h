@@ -75,7 +75,7 @@ struct Log {
 } __attribute__((packed, aligned(CACHE_LINE_SIZE)));
 
 //this is my own counting handy work, could be garbage tho, relies on  rq stats for rx bytes / packs
-struct txrx_stats {
+struct poll_stats {
   unsigned int tx_nbytes;
   unsigned int tx_npkts;
   unsigned int rx_nbytes;
@@ -83,7 +83,7 @@ struct txrx_stats {
 } __attribute((packed)); //stay close to other structs for used for this purpose
 
 
-struct sys_txrx_stats {
+struct sys_swstats_stats {
   unsigned int last_tx_nbytes;
   unsigned int last_tx_npkts;
   unsigned int last_rx_nbytes;
@@ -109,8 +109,8 @@ extern struct smpro_pwr pwr;
 extern struct Log logs[NUM_CORES]; //for the 80 cores
 //extern unsigned int tsc_per_milli;
 
-extern struct txrx_stats per_irq_stats;
-extern struct sys_txrx_stats sys_per_irq_stats;
+extern struct poll_stats poll_irq_stats;
+extern struct sys_swstats_stats sys_swstats_irq_stats;
 
 
 //extern const struct file_operations ct_file_ops_intlog;
@@ -156,14 +156,14 @@ void set_ndev_and_epriv(void); //perhaps could be static?
 //*********************** tracking of stats per irq ********************
 void diff_sys_stats(void);
 
-void record_curr_sys_irq_stats(void);
+void record_curr_sys_swstats_irq_stats(void);
 
-void init_sys_irq_stats(void);
+void init_sys_swstats_irq_stats(void);
 
-void update_sys_stats(void);
+void update_sys_swstats_irq_stats(void);
 
 void record_tx_poll_info(u16 npkts, u32 nbytes);
 
 void record_rx_poll_info(uint64_t npkts, uint64_t nbytes);
 
-void reset_per_irq_stats(void);
+void reset_poll_irq_stats(void);
