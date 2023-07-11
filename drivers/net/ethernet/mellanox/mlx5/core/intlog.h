@@ -144,7 +144,7 @@ void remove_dir(void);
 int create_dir(void);
 
 // *********************** IDLE STATES ***********************
-void cpu_idle_states(void);
+//void cpu_idle_states(void);
 
 // *********************** PMU things ***********************
 void read_counters(uint64_t* values);

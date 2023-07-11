@@ -187,7 +187,7 @@ static irqreturn_t irq_int_handler(int irq, void *nh)
 {
 	atomic_notifier_call_chain(nh, 0, NULL);
 	
-	//INTLOG 
+	//intlog 
 	record_log();
 	
 	return IRQ_HANDLED;

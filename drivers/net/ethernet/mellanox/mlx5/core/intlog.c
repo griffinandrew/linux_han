@@ -6,7 +6,7 @@
 /*************************************************************************
  * intLog: to access intel C-state information, also for arm
  *************************************************************************/
-#include <linux/cpuidle.h>
+//#include <linux/cpuidle.h>
 
 /*************************************************************************
  * intLog: to create procfs: /proc/ixgbe_stats/core/N //eventually
@@ -367,6 +367,7 @@ static inline void write_nti32_intel(void *p, const uint32_t v) {
 /******************************** GET / display IDLE STATES *******************************************/ 
 /*************************************************************************************************/ 
 
+/*
 void cpu_idle_states(void) {
     //struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
     struct cpuidle_device *dev = cpuidle_get_device();
@@ -378,6 +379,8 @@ void cpu_idle_states(void) {
         printk(KERN_INFO "i=%d name=%s exit_latency=%u target_residency=%u power_usage_mW=%i\n", i, drv->states[i].name, drv->states[i].exit_latency, drv->states[i].target_residency, drv->states[i].power_usage);
     }
 }
+
+*/
 
 /*************************************************************************************************/
 /******************************** ALLOC / DEALLOC LOGS *******************************************/ 
@@ -413,7 +416,7 @@ int alloc_log_space(void) {
 	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
 	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
 	//use cpu idle fun c to dipsplay idle states and stats
-	cpu_idle_states();
+	//cpu_idle_states();
 	
 	//call func to get ndev and epriv globally?
 	set_ndev_and_epriv();
