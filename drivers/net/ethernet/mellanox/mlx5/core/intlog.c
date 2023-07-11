@@ -142,10 +142,10 @@ static int ct_show(struct seq_file *s, void *v)
     	//seq_printf(s, "%u %u %u %u %u %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %u %u %u %u %llu\n", (unsigned int)*spos, ile->Fields.rx_desc, ile->Fields.rx_bytes, ile->Fields.tx_desc, ile->Fields.tx_bytes, ile->Fields.ninstructions, ile->Fields.ncycles, ile->Fields.nref_cycles, ile->Fields.nllc_miss, ile->Fields.c0, ile->Fields.c1, ile->Fields.c1e, ile->Fields.c3, ile->Fields.c6, ile->Fields.c7, ile->Fields.pwr, ile->Fields.curr,ile->Fields.tsc, ile->Fields.rx_bytes_stats, ile->Fields.tx_bytes_stats, ile->Fields.tx_desc_stats, ile->Fields.rx_desc_stats);
 		seq_printf(s, "%u %u %u %u %u %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %u %u %u %u\n", 
            (unsigned int)*spos, 
-           ile->Fields.rx_desc, 
-           ile->Fields.rx_bytes, 
-           ile->Fields.tx_desc, 
-           ile->Fields.tx_bytes, 
+           ile->Fields.rx_desc_poll, 
+           ile->Fields.rx_bytes_poll, 
+           ile->Fields.tx_desc_poll, 
+           ile->Fields.tx_bytes_poll, 
            (unsigned long long int)ile->Fields.ninstructions, 
            (unsigned long long int)ile->Fields.ncycles, 
            (unsigned long long int)ile->Fields.nref_cycles, 
@@ -537,30 +537,24 @@ void update_sys_swstats_irq_stats(void) {
 	sys_swstats_irq_stats.last_tx_npkts = sw_stats.tx_packets;
 }
 
-
 /*************************************************************************************************/
 /********************************* RECORD LOG ***************************************************/
 /*************************************************************************************************/
 
-//for this driver there is nothing passed to irqreturn_t func that can be used to extract the core atm
 void record_log(){
 	struct Log *il;
    	union LogEntry *ile;
    	uint64_t now = 0, last = 0;
    	int icnt = 0;
-	//uint64_t counters[3];
-	//uint64_t stat_counters[3];
 	//long long c0, c1, c2;
 	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
 	//struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
     //int power_usage;
-	//not liking the looks of this one
 	//struct mlx5e_rq rq = priv->drop_rq;
 	//struct mlx5e_channel *ch = rq.channel;
 	struct mlx5_core_dev *core_dev = epriv->mdev;
 
 	//get mlx5e_stats
-	//struct mlx5e_stats stats = priv->stats;
 	struct mlx5e_sw_stats sw_stats = epriv->stats.sw; 
 
 	//use clock to record time and cycs
@@ -577,22 +571,21 @@ void record_log(){
      	ile = &il->log[icnt];
      	now = get_rdtsc_arm_phys();
 
-		//might need semapores for safe access
+		//might need semapores for safe access to timer
 		struct mlx5_timer timer = clock.timer;
 		struct timecounter time_count = timer.tc;
 		uint64_t nsec = time_count.nsec;
-		//let this take the place of now
 		uint64_t nm_cycs = time_count.cycle_last; //these r abs tho 
 
 		//possibly when initilizing these feilds need to zero 
 		store_int64_asm(&(ile->Fields.tsc), now);
 
-		record_curr_sys_irq_stats();
-		diff_sys_stats();
-		//will be neg on first round tho... need to solve ... maybe just preset last to 0?
+		record_curr_sys_swstats_irq_stats();
+		diff_sys_swstats_irq_stats();
 		
+		//these stats are calculated from the driver swstats on a per irq basis
 		uint64_t sys_irq_swstat_stats[] = {sys_swstats_irq_stats.diff_tx_nbytes , sys_swstats_irq_stats.diff_rx_nbytes , sys_swstats_irq_stats.diff_tx_npkts, sys_swstats_irq_stats.diff_rx_npkts};
-		
+		//these stats are calculated on a per irq basis whenever tx / rx polling occurs
 		uint64_t poll_stats_irq[] = {poll_irq_stats.tx_nbytes, poll_irq_stats.rx_nbytes, poll_irq_stats.tx_npkts, poll_irq_stats.rx_npkts};			
 		
 		store_int64_asm(&(ile->Fields.tx_bytes_poll), poll_stats_irq[0]);
@@ -623,12 +616,12 @@ void record_log(){
 	   
      		if(il->perf_started) 
 			{
-				uint64_t counters[3];
+				uint64_t counters[2];
 				//c stats, cycles, LLCM, instructions
 				read_counters(counters);
-			    store_int64_asm(&(ile->Fields.nllc_miss), counters[1]);
-		  		store_int64_asm(&(ile->Fields.ncycles), counters[2]);
-			    store_int64_asm(&(ile->Fields.ninstructions), counters[3]);
+			    store_int64_asm(&(ile->Fields.nllc_miss), counters[0]);
+		  		store_int64_asm(&(ile->Fields.ncycles), counters[1]);
+			    store_int64_asm(&(ile->Fields.ninstructions), counters[2]);
 				//now reset counters
 				reset_counters();
 
