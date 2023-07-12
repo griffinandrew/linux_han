@@ -153,6 +153,12 @@ void configure_pmu(void);
 
 void set_ndev_and_epriv(void); //perhaps could be static?
 
+
+//*********************** smpro ********************
+
+int get_power_smpro(void);
+
+
 //*********************** tracking of stats per irq ********************
 void diff_sys_stats(void);
 

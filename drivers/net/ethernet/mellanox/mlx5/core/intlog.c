@@ -31,6 +31,9 @@
 #include <linux/fs.h>
 
 
+//HWMON / SMPRO INCLUDE
+#include <linux/hwmon.h>
+
 /*************************************************************************
  * intLog: access tsc tick rate
  *************************************************************************/
@@ -51,6 +54,11 @@ struct Log logs[NUM_CORES];
 
 struct net_device *ndev;
 struct mlx5e_priv *epriv;
+
+//intlog function call extern
+extern int smpro_read_power(struct device *dev, u32 attr, int channel, long *val_pwr);
+
+
 
 ////////////////////////////////////////////////////////////////
 struct proc_dir_entry *stats_dir;
@@ -538,6 +546,31 @@ void update_sys_swstats_irq_stats(void) {
 }
 
 /*************************************************************************************************/
+/*********************************SMPRO***************************************************/
+/*************************************************************************************************/
+
+int get_power_smpro() {
+	struct mlx5_core_dev *core_dev = epriv->mdev;
+	struct device *dev = core_dev->device;
+	struct mlx5e_channels chs = epriv->channels;
+	struct mlx5e_channel **ch = chs.c;
+	int ix = (*ch)->ix; //channel number passed to read energy
+	long val_pwr;
+	u32 attr = hwmon_power_input;
+
+	int result = smpro_read_power(dev, attr, ix, &val_pwr);
+	if(result == 0){
+		return val_pwr;
+	}
+	else{
+		return -1; 
+	}
+}
+
+
+
+
+/*************************************************************************************************/
 /********************************* RECORD LOG ***************************************************/
 /*************************************************************************************************/
 
@@ -611,7 +644,9 @@ void record_log(){
 		    //store current rdtsc
 		    il->itr_joules_last_tsc = now;
 	     	//first get the joules
-	        store_int64_asm(&(ile->Fields.pwr), pwr.smpro_power);
+		int power = get_power_smpro();
+		store_int64_asm(&(ile->Fields.pwr), power);
+                //store_int64_asm(&(ile->Fields.pwr), pwr.smpro_power);
 		store_int64_asm(&(ile->Fields.curr), pwr.smpro_curr);
 	   
      		if(il->perf_started) 
@@ -647,3 +682,6 @@ void record_log(){
 		il->itr_cnt++;
     }
 }
+
+
+

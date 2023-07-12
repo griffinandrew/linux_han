@@ -16,7 +16,7 @@
 #include <linux/regmap.h>
 
 //intlog 
-#include "intlog.h" //so can access power var to str power, not sure what the read freq is tho or how to trigger these functions tho
+//#include "intlog.h" //so can access power var to str power, not sure what the read freq is tho or how to trigger these functions tho
 //added to include path
 
 /* Logical Power Sensor Registers */
@@ -266,14 +266,16 @@ static int smpro_read_curr(struct device *dev, u32 attr, int channel, long *val)
 		*val = value & 0x7fff;
 		//intlog
 		//record current
-		pwr.smpro_curr = *val;
+		//pwr.smpro_curr = *val;
 		return 0;
 	default:
 		return -EOPNOTSUPP;
 	}
 }
 
-static int smpro_read_power(struct device *dev, u32 attr, int channel, long *val_pwr)
+//intlog 
+//modify function to non-static for use in external files
+int smpro_read_power(struct device *dev, u32 attr, int channel, long *val_pwr)
 {
 	struct smpro_hwmon *hwmon = dev_get_drvdata(dev);
 	unsigned int val = 0, val_mw = 0;
@@ -293,7 +295,7 @@ static int smpro_read_power(struct device *dev, u32 attr, int channel, long *val
 		//intlog 
 		//set the value of pwr to power var to be accessed in intlog
 		//not sure about this update freq tho
-		pwr.smpro_power = *val_pwr;
+		//pwr.smpro_power = *val_pwr;
 		return 0;
 
 	default:
