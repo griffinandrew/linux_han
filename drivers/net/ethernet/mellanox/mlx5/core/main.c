@@ -74,6 +74,10 @@
 #include "sf/sf.h"
 #include "mlx5_irq.h"
 
+//intlog
+#include "intlog.h"
+
+
 MODULE_AUTHOR("Eli Cohen <eli@mellanox.com>");
 MODULE_DESCRIPTION("Mellanox 5th generation network adapters (ConnectX series) core driver");
 MODULE_LICENSE("Dual BSD/GPL");
@@ -2157,6 +2161,19 @@ static int __init mlx5_init(void)
 	if (err)
 		goto err_pci;
 
+	//intlog : init memory for logs when opening
+	err = alloc_log_space();
+
+	if (err)
+	  return err;
+	
+	//intlog : create proc/stats/core/N
+	err = create_dir();
+
+	if (err)
+	  return err;
+	//intlog end
+
 	return 0;
 
 err_pci:
@@ -2170,6 +2187,12 @@ err_debug:
 
 static void __exit mlx5_cleanup(void)
 {
+        //intlog
+        //dealloc
+        dealloc_log_space();
+	//del log dir
+	remove_dir();
+	//intlog end
 	pci_unregister_driver(&mlx5_core_driver);
 	mlx5_sf_driver_unregister();
 	mlx5e_cleanup();

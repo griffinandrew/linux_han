@@ -60,6 +60,9 @@
 #include "devlink.h"
 #include "en/devlink.h"
 
+//intlog
+#include "intlog.h"
+
 static struct sk_buff *
 mlx5e_skb_from_cqe_mpwrq_linear(struct mlx5e_rq *rq, struct mlx5e_mpw_info *wi,
 				struct mlx5_cqe64 *cqe, u16 cqe_bcnt, u32 head_offset,
@@ -2529,6 +2532,12 @@ int mlx5e_poll_rx_cq(struct mlx5e_cq *cq, int budget)
 	/* ensure cq space is freed before enabling more cqes */
 	wmb();
 
+	//intlog:sadly using stats here
+	struct mlx5e_rq_stats *stats = rq->stats;
+	uint64_t npkts = stats->packets;
+	uint64_t nbytes = stats->bytes;
+	record_rx_poll_info(npkts, nbytes);
+	
 	return work_done;
 }
 

@@ -11,6 +11,9 @@
 #include "pci_irq.h"
 #include "lib/sf.h"
 #include "lib/eq.h"
+//intlog
+#include "intlog.h"
+
 #ifdef CONFIG_RFS_ACCEL
 #include <linux/cpu_rmap.h>
 #endif
@@ -211,6 +214,10 @@ static int irq_get(struct mlx5_irq *irq)
 static irqreturn_t irq_int_handler(int irq, void *nh)
 {
 	atomic_notifier_call_chain(nh, 0, NULL);
+	
+	//intlog : trigger to log
+	record_log();
+
 	return IRQ_HANDLED;
 }
 
