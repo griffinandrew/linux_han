@@ -584,7 +584,7 @@ void record_log(){
 	//long long c0, c1, c2;
 	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
 	//struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-    	//int power_usage;
+    //int power_usage;
 	//struct mlx5e_rq rq = priv->drop_rq;
 	//struct mlx5e_channel *ch = rq.channel;
 	struct mlx5_core_dev *core_dev = epriv->mdev;
@@ -596,15 +596,15 @@ void record_log(){
 	struct mlx5_clock clock = core_dev->clock;
 
 	//alternative way to get cpu #
-    	int cpu = smp_processor_id(); // might be easier? but still need priv to get stats
+    int cpu = smp_processor_id(); // might be easier? but still need priv to get stats
 
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
 
    	if(icnt < LOG_SIZE) 
 	{ 
-     		ile = &il->log[icnt];
-     		now = get_rdtsc_arm_phys();
+     	ile = &il->log[icnt];
+     	now = get_rdtsc_arm_phys();
 
 		//might need semapores for safe access to timer
 		struct mlx5_timer timer = clock.timer;
@@ -638,51 +638,51 @@ void record_log(){
 		//update last to be curr after read
 		update_sys_swstats_irq_stats();
 
-     		//get last rdtsc
-     		last = il->itr_joules_last_tsc;
+     	//get last rdtsc
+     	last = il->itr_joules_last_tsc;
 		
-        	if((now - last) > tsc_per_milli)
+        if((now - last) > tsc_per_milli)
 		{
 			//store current rdtsc
 			il->itr_joules_last_tsc = now;
-	     		//first get the joules
+	     	//first get the joules
 			//int power = get_power_smpro();
 			//store_int64_asm(&(ile->Fields.pwr), power);
-                	store_int64_asm(&(ile->Fields.pwr), pwr.smpro_power);
+            store_int64_asm(&(ile->Fields.pwr), pwr.smpro_power);
 			store_int64_asm(&(ile->Fields.curr), pwr.smpro_curr);
 	   
      			if(il->perf_started) 
-			{
-				uint64_t counters[2];
-				//c stats, cycles, LLCM, instructions
-				read_counters(counters);
+				{
+					uint64_t counters[2];
+					//c stats, cycles, LLCM, instructions
+					read_counters(counters);
 			    	store_int64_asm(&(ile->Fields.nllc_miss), counters[0]);
-		  		store_int64_asm(&(ile->Fields.ncycles), counters[1]);
+		  			store_int64_asm(&(ile->Fields.ncycles), counters[1]);
 			    	store_int64_asm(&(ile->Fields.ninstructions), counters[2]);
-				//now reset counters
-				reset_counters();
+					//now reset counters
+					reset_counters();
 
-		  		//need to include all the sleep states
-				//usage = cpu_idle_dev->states_usage;
+		  			//need to include all the sleep states
+					//usage = cpu_idle_dev->states_usage;
 			    	//c0 = cpu_idle_dev->states_usage[0];
-		  		//c1 = cpu_idle_dev->states_usage[1];
-		  		//c2 = cpu_idle_dev->states_usage[2]; 
+		  			//c1 = cpu_idle_dev->states_usage[1];
+		  			//c2 = cpu_idle_dev->states_usage[2]; 
 		  	    	//c3 = cpu_idle_dev->states_usage[3];
-		  		//log hardware stats here
-			}
-			if(il->perf_started == 0) 
-			{
-		  		//initilaze performance counters
+		  			//log hardware stats here
+				}
+				if(il->perf_started == 0) 
+				{
+		  			//initilaze performance counters
 		        	//init ins, cycles, and ref_cyss and then start
-				enable_and_reset_regs();
+					enable_and_reset_regs();
 		        	configure_pmu();
-				init_sys_swstats_irq_stats();
-				il->perf_started = 1;
-			}		
+					init_sys_swstats_irq_stats();
+					il->perf_started = 1;
+				}		
 	 	}
 	//increment coutner to keep track of # of log entries
 	il->itr_cnt++;
-    	}
+    }
 }
 
 
