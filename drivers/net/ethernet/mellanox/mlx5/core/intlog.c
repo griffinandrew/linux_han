@@ -546,7 +546,7 @@ void update_sys_swstats_irq_stats(void) {
 }
 
 /*************************************************************************************************/
-/*********************************SMPRO***************************************************/
+/*********************************SMPRO + XGENE **************************************************/
 /*************************************************************************************************/
 
 
@@ -571,6 +571,18 @@ int get_power_smpro() {
 
 */
 
+
+int get_power_xgene() {
+	struct mlx5_core_dev *core_dev = epriv->mdev;
+        struct device *dev = core_dev->device;
+	struct xgene_hwmon_dev *ctx = dev_get_drvdata(dev);
+	//note: this is a static func, yet to change to extern, however from smpro doesnt appear to be working  :((((
+	u32 cpu_pwr;
+	int xgene_ret = xgene_hwmon_get_cpu_pwr(dev, &cpu_pwr);
+	//possibly some conditional logic for ret 
+	
+	return (int) cpu_pwr;
+}
 
 /*************************************************************************************************/
 /********************************* RECORD LOG ***************************************************/
