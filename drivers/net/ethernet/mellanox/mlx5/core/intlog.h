@@ -156,9 +156,9 @@ void set_ndev_and_epriv(void); //perhaps could be static?
 
 //*********************** smpro + xgene ********************
 
-int get_power_smpro(void);
+//int get_power_smpro(void);
 
-int get_power_xgene(void);
+//int get_power_xgene(void);
 
 //*********************** tracking of stats per irq ********************
 void diff_sys_stats(void);

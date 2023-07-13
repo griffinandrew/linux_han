@@ -571,7 +571,7 @@ int get_power_smpro() {
 
 */
 
-
+/*
 int get_power_xgene() {
 	struct mlx5_core_dev *core_dev = epriv->mdev;
         struct device *dev = core_dev->device;
@@ -583,6 +583,7 @@ int get_power_xgene() {
 	
 	return (int) cpu_pwr;
 }
+*/
 
 /*************************************************************************************************/
 /********************************* RECORD LOG ***************************************************/
