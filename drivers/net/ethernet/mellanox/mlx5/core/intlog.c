@@ -6,7 +6,7 @@
 /*************************************************************************
  * intLog: to access intel C-state information, also for arm
  *************************************************************************/
-//#include <linux/cpuidle.h>
+#include <linux/cpuidle.h>
 
 //#include <asm/cpuidle.h>
 
@@ -29,10 +29,14 @@
 #include "intlog.h"
 #include <linux/timecounter.h>
 #include <linux/fs.h>
-
+#include <linux/device.h>
 
 //HWMON / SMPRO INCLUDE
 #include <linux/hwmon.h>
+
+#include "../../../../../hwmon/xgene-hwmon.h"
+
+//#include "drivers/hwmon/xgene-hwmon.h"
 
 /*************************************************************************
  * intLog: access tsc tick rate
@@ -58,9 +62,10 @@ struct mlx5e_priv *epriv;
 //intlog function call extern
 //extern int smpro_read_power(struct device *dev, u32 attr, int channel, long *val_pwr);
 
+//extern int xgene_hwmon_get_cpu_pwr(struct xgene_hwmon_dev *ctx, u32 *val);
+//extern struct xgene_hwmon_dev;
 
-
-////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
 struct proc_dir_entry *stats_dir;
 struct proc_dir_entry *stats_core_dir;
 ////////////////////////////////////////////////////////////////
@@ -365,7 +370,6 @@ static inline void write_nti32_intel(void *p, const uint32_t v) {
 /******************************** GET / display IDLE STATES *******************************************/ 
 /*************************************************************************************************/ 
 
-/*
 void cpu_idle_states(void) {
     //struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
     //struct cpuidle_device *dev = cpuidle_get_device();
@@ -382,7 +386,6 @@ void cpu_idle_states(void) {
         printk(KERN_INFO "i=%d name=%s exit_latency=%u target_residency=%u power_usage_mW=%i\n", i, drv->states[i].name, drv->states[i].exit_latency, drv->states[i].target_residency, drv->states[i].power_usage);
     }
 }
-*/
 
 /*************************************************************************************************/
 /******************************** ALLOC / DEALLOC LOGS *******************************************/ 
@@ -420,7 +423,7 @@ int alloc_log_space(void) {
 	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
 	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
 	//use cpu idle fun c to dipsplay idle states and stats
-	//cpu_idle_states();
+	cpu_idle_states();
 	
 	//call func to get ndev and epriv globally?
 	set_ndev_and_epriv();
@@ -571,19 +574,22 @@ int get_power_smpro() {
 
 */
 
-/*
+
 int get_power_xgene() {
 	struct mlx5_core_dev *core_dev = epriv->mdev;
         struct device *dev = core_dev->device;
-	struct xgene_hwmon_dev *ctx = dev_get_drvdata(dev);
+	
+	//this is the real way to get it, using dumby one to see what happens
+	//struct xgene_hwmon_dev *ctx = dev_get_drvdata(dev);
+
+	struct xgene_hwmon_dev ctx_instance; 
 	//note: this is a static func, yet to change to extern, however from smpro doesnt appear to be working  :((((
 	u32 cpu_pwr;
-	int xgene_ret = xgene_hwmon_get_cpu_pwr(dev, &cpu_pwr);
+	int xgene_ret = xgene_hwmon_get_cpu_pwr(&ctx_instance, &cpu_pwr);
 	//possibly some conditional logic for ret 
 	
 	return (int) cpu_pwr;
 }
-*/
 
 /*************************************************************************************************/
 /********************************* RECORD LOG ***************************************************/
@@ -659,8 +665,8 @@ void record_log(){
 			//store current rdtsc
 			il->itr_joules_last_tsc = now;
 	     	//first get the joules
-			//int power = get_power_smpro();
-			//store_int64_asm(&(ile->Fields.pwr), power);
+			int power = get_power_xgene();
+		        store_int64_asm(&(ile->Fields.pwr), power);
             store_int64_asm(&(ile->Fields.pwr), pwr.smpro_power);
 			store_int64_asm(&(ile->Fields.curr), pwr.smpro_curr);
 	   

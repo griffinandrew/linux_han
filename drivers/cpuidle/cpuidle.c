@@ -33,6 +33,9 @@
 DEFINE_PER_CPU(struct cpuidle_device *, cpuidle_devices);
 DEFINE_PER_CPU(struct cpuidle_device, cpuidle_dev);
 
+//intlog 
+EXPORT_SYMBOL(cpuidle_devices);
+
 DEFINE_MUTEX(cpuidle_lock);
 LIST_HEAD(cpuidle_detected_devices);
 

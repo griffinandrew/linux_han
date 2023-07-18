@@ -144,7 +144,7 @@ void remove_dir(void);
 int create_dir(void);
 
 // *********************** IDLE STATES ***********************
-//void cpu_idle_states(void);
+void cpu_idle_states(void);
 
 // *********************** PMU things ***********************
 void read_counters(uint64_t* values);
@@ -158,7 +158,7 @@ void set_ndev_and_epriv(void); //perhaps could be static?
 
 //int get_power_smpro(void);
 
-//int get_power_xgene(void);
+int get_power_xgene(void);
 
 //*********************** tracking of stats per irq ********************
 void diff_sys_stats(void);

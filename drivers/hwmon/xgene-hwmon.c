@@ -26,6 +26,11 @@
 
 #include <acpi/pcc.h>
 
+
+//intlog
+//
+#include "xgene-hwmon.h"
+
 /* SLIMpro message defines */
 #define MSG_TYPE_DBG			0
 #define MSG_TYPE_ERR			7
@@ -78,7 +83,7 @@
 
 #define to_xgene_hwmon_dev(cl)		\
 	container_of(cl, struct xgene_hwmon_dev, mbox_client)
-
+/*
 enum xgene_hwmon_version {
 	XGENE_HWMON_V1 = 0,
 	XGENE_HWMON_V2 = 1,
@@ -113,6 +118,9 @@ struct xgene_hwmon_dev {
 	void			*pcc_comm_addr;
 	u64			usecs_lat;
 };
+
+*/
+//commented out as added header
 
 /*
  * This function tests and clears a bitmask then returns its old value
@@ -274,7 +282,9 @@ static int xgene_hwmon_get_notification_msg(struct xgene_hwmon_dev *ctx,
 	return rc;
 }
 
-static int xgene_hwmon_get_cpu_pwr(struct xgene_hwmon_dev *ctx, u32 *val)
+//intlog 
+//get rid of static for export symbol
+int xgene_hwmon_get_cpu_pwr(struct xgene_hwmon_dev *ctx, u32 *val)
 {
 	u32 watt, mwatt;
 	int rc;
@@ -290,6 +300,10 @@ static int xgene_hwmon_get_cpu_pwr(struct xgene_hwmon_dev *ctx, u32 *val)
 	*val = WATT_TO_mWATT(watt) + mwatt;
 	return 0;
 }
+
+//intlog
+//add export symbol
+EXPORT_SYMBOL(xgene_hwmon_get_cpu_pwr);
 
 static int xgene_hwmon_get_io_pwr(struct xgene_hwmon_dev *ctx, u32 *val)
 {
