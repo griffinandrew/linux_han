@@ -311,7 +311,7 @@ void configure_pmu(void)
 	asm volatile("isb"); // Ensure that all PMU configuration changes have completed
 }
 
-void read_counters(uint64_t* values)
+void read_counters(uint64_t *values)
 {
     uint32_t pmxevcntr0_val, pmxevcntr1_val, pmxevcntr2_val;
 
@@ -385,6 +385,19 @@ void cpu_idle_states(void) {
     for(i=0;i<drv->state_count;i++) {
         printk(KERN_INFO "i=%d name=%s exit_latency=%u target_residency=%u power_usage_mW=%i\n", i, drv->states[i].name, drv->states[i].exit_latency, drv->states[i].target_residency, drv->states[i].power_usage);
     }
+}
+
+
+
+void get_idle_states_usage(long long *values) {
+	struct cpuidle_device *idle_dev = __this_cpu_read(cpuidle_devices);
+	//need to include all the sleep states
+	struct cpuidle_state_usage usage_0 = idle_dev->states_usage[0];
+	values[0] = usage_0.usage;
+	struct cpuidle_state_usage usage_1 = idle_dev->states_usage[1];
+	values[1] = usage_1.usage;
+	struct cpuidle_state_usage usage_2 = idle_dev->states_usage[2];
+	values[2] = usage_2.usage;
 }
 
 /*************************************************************************************************/
@@ -505,7 +518,7 @@ void remove_dir(void) {
 
 //trying to use this function to get once so dont need to constantly call on irq
 void set_ndev_and_epriv(void){
-	ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0"); //dont think this is mlx nic 
+	ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0"); 
 	epriv = netdev_priv(ndev);
 }
 
@@ -577,15 +590,15 @@ int get_power_smpro() {
 
 int get_power_xgene() {
 	struct mlx5_core_dev *core_dev = epriv->mdev;
-        struct device *dev = core_dev->device;
+    struct device *dev = core_dev->device;
 	
 	//this is the real way to get it, using dumby one to see what happens
-	//struct xgene_hwmon_dev *ctx = dev_get_drvdata(dev);
+	struct xgene_hwmon_dev *ctx = dev_get_drvdata(dev);
 
-	struct xgene_hwmon_dev ctx_instance; 
+	//struct xgene_hwmon_dev ctx_instance; 
 	//note: this is a static func, yet to change to extern, however from smpro doesnt appear to be working  :((((
 	u32 cpu_pwr;
-	int xgene_ret = xgene_hwmon_get_cpu_pwr(&ctx_instance, &cpu_pwr);
+	int xgene_ret = xgene_hwmon_get_cpu_pwr(ctx, &cpu_pwr);
 	//possibly some conditional logic for ret 
 	
 	return (int) cpu_pwr;
@@ -598,7 +611,7 @@ int get_power_xgene() {
 void record_log(){
 	struct Log *il;
    	union LogEntry *ile;
-   	uint64_t now = 0, last = 0;
+   	uint64_t now = 0;
    	int icnt = 0;
 	//long long c0, c1, c2;
 	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
@@ -609,13 +622,14 @@ void record_log(){
 	struct mlx5_core_dev *core_dev = epriv->mdev;
 
 	//get mlx5e_stats
-	struct mlx5e_sw_stats sw_stats = epriv->stats.sw; 
+	//struct mlx5e_sw_stats sw_stats = epriv->stats.sw; 
 
 	//use clock to record time and cycs
-	struct mlx5_clock clock = core_dev->clock;
+	//struct mlx5_clock clock = core_dev->clock;
 
 	//alternative way to get cpu #
-    int cpu = smp_processor_id(); // might be easier? but still need priv to get stats
+    int cpu = smp_processor_id(); //might need to use cpu idle instead here 
+	// might be easier? but still need priv to get stats
 
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
@@ -626,10 +640,10 @@ void record_log(){
      	now = get_rdtsc_arm_phys();
 
 		//might need semapores for safe access to timer
-		struct mlx5_timer timer = clock.timer;
-		struct timecounter time_count = timer.tc;
-		uint64_t nsec = time_count.nsec;
-		uint64_t nm_cycs = time_count.cycle_last; //these r abs tho 
+		//struct mlx5_timer timer = clock.timer;
+		//struct timecounter time_count = timer.tc;
+		//uint64_t nsec = time_count.nsec;
+		//uint64_t nm_cycs = time_count.cycle_last; //these r abs tho 
 
 		//possibly when initilizing these feilds need to zero 
 		store_int64_asm(&(ile->Fields.tsc), now);
@@ -657,48 +671,39 @@ void record_log(){
 		//update last to be curr after read
 		update_sys_swstats_irq_stats();
 
-     	//get last rdtsc
-     	last = il->itr_joules_last_tsc;
-		
-        if((now - last) > tsc_per_milli)
+    	il->itr_joules_last_tsc = now;
+	    //first get the joules
+		int power = get_power_xgene();
+		store_int64_asm(&(ile->Fields.pwr), power);
+        //store_int64_asm(&(ile->Fields.pwr), pwr.smpro_power);
+		//store_int64_asm(&(ile->Fields.curr), pwr.smpro_curr);
+     	if(il->perf_started) 
 		{
-			//store current rdtsc
-			il->itr_joules_last_tsc = now;
-	     	//first get the joules
-			int power = get_power_xgene();
-		        store_int64_asm(&(ile->Fields.pwr), power);
-            store_int64_asm(&(ile->Fields.pwr), pwr.smpro_power);
-			store_int64_asm(&(ile->Fields.curr), pwr.smpro_curr);
-	   
-     			if(il->perf_started) 
-				{
-					uint64_t counters[2];
-					//c stats, cycles, LLCM, instructions
-					read_counters(counters);
-			    	store_int64_asm(&(ile->Fields.nllc_miss), counters[0]);
-		  			store_int64_asm(&(ile->Fields.ncycles), counters[1]);
-			    	store_int64_asm(&(ile->Fields.ninstructions), counters[2]);
-					//now reset counters
-					reset_counters();
+			uint64_t counters[3];
+			//c stats, cycles, LLCM, instructions
+			read_counters(counters);
+			store_int64_asm(&(ile->Fields.nllc_miss), counters[0]);
+		  	store_int64_asm(&(ile->Fields.ncycles), counters[1]);
+			store_int64_asm(&(ile->Fields.ninstructions), counters[2]);
+			//now reset counters
+			reset_counters();
 
-		  			//need to include all the sleep states
-					//usage = cpu_idle_dev->states_usage;
-			    	//c0 = cpu_idle_dev->states_usage[0];
-		  			//c1 = cpu_idle_dev->states_usage[1];
-		  			//c2 = cpu_idle_dev->states_usage[2]; 
-		  	    	//c3 = cpu_idle_dev->states_usage[3];
-		  			//log hardware stats here
-				}
-				if(il->perf_started == 0) 
-				{
-		  			//initilaze performance counters
-		        	//init ins, cycles, and ref_cyss and then start
-					enable_and_reset_regs();
-		        	configure_pmu();
-					init_sys_swstats_irq_stats();
-					il->perf_started = 1;
-				}		
-	 	}
+			long long sleep_states[3];
+			get_idle_states_usage(sleep_states);
+			store_int64_asm(&(ile->Fields.c0), sleep_states[0]);
+			store_int64_asm(&(ile->Fields.c1), sleep_states[1]);
+			store_int64_asm(&(ile->Fields.c1), sleep_states[2]);
+
+		}
+		if(il->perf_started == 0) 
+		{
+		  	//initilaze performance counters
+		    //init ins, cycles, and ref_cyss and then start
+			enable_and_reset_regs();
+		    configure_pmu();
+			init_sys_swstats_irq_stats();
+			il->perf_started = 1;
+		}		
 	//increment coutner to keep track of # of log entries
 	il->itr_cnt++;
     }

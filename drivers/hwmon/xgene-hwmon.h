@@ -1,4 +1,18 @@
 #include <linux/hwmon.h>
+#include <linux/acpi.h>
+#include <linux/dma-mapping.h>
+#include <linux/hwmon.h>
+#include <linux/hwmon-sysfs.h>
+#include <linux/io.h>
+#include <linux/interrupt.h>
+#include <linux/kfifo.h>
+#include <linux/mailbox_controller.h>
+#include <linux/mailbox_client.h>
+#include <linux/module.h>
+#include <linux/of.h>
+#include <linux/platform_device.h>
+
+#include <acpi/pcc.h>
 
 enum xgene_hwmon_version {
         XGENE_HWMON_V1 = 0,

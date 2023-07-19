@@ -146,8 +146,10 @@ int create_dir(void);
 // *********************** IDLE STATES ***********************
 void cpu_idle_states(void);
 
+void get_idle_states_usage(long long *values);
+
 // *********************** PMU things ***********************
-void read_counters(uint64_t* values);
+void read_counters(uint64_t *values);
 
 void configure_pmu(void);
 
