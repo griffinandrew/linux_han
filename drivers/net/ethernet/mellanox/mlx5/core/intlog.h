@@ -146,21 +146,20 @@ int create_dir(void);
 // *********************** IDLE STATES ***********************
 void cpu_idle_states(void);
 
-void get_idle_states_usage(long long *values);
+void log_idle_states_usage(union LogEntry *ile);
 
 // *********************** PMU things ***********************
-void read_counters(uint64_t *values);
+void log_counters(union LogEntry *ile);
 
 void configure_pmu(void);
 
 void set_ndev_and_epriv(void); //perhaps could be static?
 
-
 //*********************** smpro + xgene ********************
 
 //int get_power_smpro(void);
 
-int get_power_xgene(void);
+void log_power_xgene(union LogEntry *ile);
 
 //*********************** tracking of stats per irq ********************
 void diff_sys_stats(void);
@@ -171,8 +170,13 @@ void init_sys_swstats_irq_stats(void);
 
 void update_sys_swstats_irq_stats(void);
 
+void log_sys_swstats_irq_stats(union LogEntry *ile);
+
 void record_tx_poll_info(u16 npkts, u32 nbytes);
 
 void record_rx_poll_info(uint64_t npkts, uint64_t nbytes);
 
 void reset_poll_irq_stats(void);
+
+void log_poll_irq_stats(union LogEntry *ile);
+

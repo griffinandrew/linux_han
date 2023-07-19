@@ -240,6 +240,42 @@ static const struct file_operations ct_file_ops_intlog = {
 };
 #endif
 
+
+/*************************************************************************************************/
+//*********************************** ARCH SPEC NTI **********************************************
+//used for non-temporal store instruction so our logging doesnt interfere with performance
+/*************************************************************************************************/ 
+
+//p is pointer to mem location to written, v value to overwrite mem location
+static inline void write_nti64_intel(void *p, const uint64_t v) {
+	asm volatile("movnti %0, (%1)\n\t"
+		: 
+		: "r"(v), "r"(p)
+		: "memory");
+}
+
+static inline void store_int64_asm(void *p, const uint64_t v) {
+	asm volatile("str %x[v], [%x[p]]"
+        : [p] "+r" (p)
+        : [v] "r" (v)
+        : "memory");
+}
+
+static inline void store_int32_asm(void *p, const uint32_t v) {
+    asm volatile("str %w[v], [%x[p]]"
+        : [p] "+r" (p)
+        : [v] "r" (v)
+        : "memory");
+}
+
+static inline void write_nti32_intel(void *p, const uint32_t v) {
+	asm volatile("movnti %0, (%1)\n\t"
+		:
+ 		: "r"(v), "r"(p)
+	    : "memory");
+}
+
+
 /*************************************************************************************************/
 /********************************** arch specific asm getters ************************************/
 /*************************************************************************************************/ 
@@ -311,7 +347,7 @@ void configure_pmu(void)
 	asm volatile("isb"); // Ensure that all PMU configuration changes have completed
 }
 
-void read_counters(uint64_t *values)
+void log_counters(union LogEntry *ile)
 {
     uint32_t pmxevcntr0_val, pmxevcntr1_val, pmxevcntr2_val;
 
@@ -326,43 +362,9 @@ void read_counters(uint64_t *values)
     asm volatile("msr PMSELR_EL0, %0" : : "r" (2));
     asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (pmxevcntr2_val));
 
-    values[0] = pmxevcntr0_val;
-    values[1] = pmxevcntr1_val;
-    values[2] = pmxevcntr2_val;
-}
-
-/*************************************************************************************************/
-//*********************************** ARCH SPEC NTI **********************************************
-//used for non-temporal store instruction so our logging doesnt interfere with performance
-/*************************************************************************************************/ 
-
-//p is pointer to mem location to written, v value to overwrite mem location
-static inline void write_nti64_intel(void *p, const uint64_t v) {
-	asm volatile("movnti %0, (%1)\n\t"
-		: 
-		: "r"(v), "r"(p)
-		: "memory");
-}
-
-static inline void store_int64_asm(void *p, const uint64_t v) {
-	asm volatile("str %x[v], [%x[p]]"
-        : [p] "+r" (p)
-        : [v] "r" (v)
-        : "memory");
-}
-
-static inline void store_int32_asm(void *p, const uint32_t v) {
-    asm volatile("str %w[v], [%x[p]]"
-        : [p] "+r" (p)
-        : [v] "r" (v)
-        : "memory");
-}
-
-static inline void write_nti32_intel(void *p, const uint32_t v) {
-	asm volatile("movnti %0, (%1)\n\t"
-		:
- 		: "r"(v), "r"(p)
-	    : "memory");
+	store_int64_asm(&(ile->Fields.nllc_miss), pmxevcntr0_val);
+	store_int64_asm(&(ile->Fields.ncycles), pmxevcntr1_val);
+	store_int64_asm(&(ile->Fields.ninstructions), pmxevcntr2_val);
 }
 
 
@@ -389,15 +391,16 @@ void cpu_idle_states(void) {
 
 
 
-void get_idle_states_usage(long long *values) {
+void log_idle_states_usage(union LogEntry *ile) {
 	struct cpuidle_device *idle_dev = __this_cpu_read(cpuidle_devices);
 	//need to include all the sleep states
 	struct cpuidle_state_usage usage_0 = idle_dev->states_usage[0];
-	values[0] = usage_0.usage;
 	struct cpuidle_state_usage usage_1 = idle_dev->states_usage[1];
-	values[1] = usage_1.usage;
 	struct cpuidle_state_usage usage_2 = idle_dev->states_usage[2];
-	values[2] = usage_2.usage;
+	//log state usage
+	store_int64_asm(&(ile->Fields.c0), usage_0.usage);
+	store_int64_asm(&(ile->Fields.c1), usage_1.usage);
+	store_int64_asm(&(ile->Fields.c1e), usage_2.usage);
 }
 
 /*************************************************************************************************/
@@ -477,6 +480,16 @@ void reset_poll_irq_stats(void) {
 	poll_irq_stats.rx_nbytes = 0;
 	poll_irq_stats.rx_npkts = 0;
 }
+
+
+//not sure if this should be a piinter or not, know that I want to pass address to
+void log_poll_irq_stats(union LogEntry *ile) {
+	store_int64_asm(&(ile->Fields.tx_bytes_poll), poll_irq_stats.tx_nbytes);
+	store_int64_asm(&(ile->Fields.rx_bytes_poll), poll_irq_stats.rx_nbytes);
+	store_int64_asm(&(ile->Fields.tx_desc_poll), poll_irq_stats.tx_npkts);
+	store_int64_asm(&(ile->Fields.rx_desc_poll), poll_irq_stats.rx_npkts);
+}
+
 
 //in case can't use sw_stats
 
@@ -561,6 +574,13 @@ void update_sys_swstats_irq_stats(void) {
 	sys_swstats_irq_stats.last_tx_npkts = sw_stats.tx_packets;
 }
 
+void log_sys_swstats_irq_stats(union LogEntry *ile) {
+	store_int64_asm(&(ile->Fields.tx_bytes_stats), sys_swstats_irq_stats.diff_tx_nbytes);
+		store_int64_asm(&(ile->Fields.rx_bytes_stats), sys_swstats_irq_stats.diff_rx_nbytes);
+		store_int64_asm(&(ile->Fields.tx_desc_stats), sys_swstats_irq_stats.diff_tx_npkts);
+		store_int64_asm(&(ile->Fields.rx_desc_stats), sys_swstats_irq_stats.diff_rx_npkts);
+}
+
 /*************************************************************************************************/
 /*********************************SMPRO + XGENE **************************************************/
 /*************************************************************************************************/
@@ -588,7 +608,7 @@ int get_power_smpro() {
 */
 
 
-int get_power_xgene() {
+void log_power_xgene(union LogEntry *ile) {
 	struct mlx5_core_dev *core_dev = epriv->mdev;
     struct device *dev = core_dev->device;
 	
@@ -600,6 +620,8 @@ int get_power_xgene() {
 	u32 cpu_pwr;
 	int xgene_ret = xgene_hwmon_get_cpu_pwr(ctx, &cpu_pwr);
 	//possibly some conditional logic for ret 
+
+	store_int64_asm(&(ile->Fields.pwr), cpu_pwr);
 	
 	return (int) cpu_pwr;
 }
@@ -613,17 +635,10 @@ void record_log(){
    	union LogEntry *ile;
    	uint64_t now = 0;
    	int icnt = 0;
-	//long long c0, c1, c2;
 	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
 	//struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
-    //int power_usage;
-	//struct mlx5e_rq rq = priv->drop_rq;
-	//struct mlx5e_channel *ch = rq.channel;
-	struct mlx5_core_dev *core_dev = epriv->mdev;
 
-	//get mlx5e_stats
-	//struct mlx5e_sw_stats sw_stats = epriv->stats.sw; 
-
+	//struct mlx5_core_dev *core_dev = epriv->mdev;
 	//use clock to record time and cycs
 	//struct mlx5_clock clock = core_dev->clock;
 
@@ -638,73 +653,58 @@ void record_log(){
 	{ 
      	ile = &il->log[icnt];
      	now = get_rdtsc_arm_phys();
-
-		//might need semapores for safe access to timer
-		//struct mlx5_timer timer = clock.timer;
-		//struct timecounter time_count = timer.tc;
-		//uint64_t nsec = time_count.nsec;
-		//uint64_t nm_cycs = time_count.cycle_last; //these r abs tho 
-
-		//possibly when initilizing these feilds need to zero 
+		il->itr_joules_last_tsc = now;
 		store_int64_asm(&(ile->Fields.tsc), now);
+		
+		/* //alt way to get time and counts
+		//might need semapores for safe access to timer
+		struct mlx5_timer timer = clock.timer;
+		struct timecounter time_count = timer.tc;
+		uint64_t nsec = time_count.nsec;
+		uint64_t nm_cycs = time_count.cycle_last; //these r abs tho 
+		*/	
 
+		//OPTION 1: stats: using sys sw_stats struct
+		//get current sys stats
 		record_curr_sys_swstats_irq_stats();
+		//calcualte stast on per irq basus
 		diff_sys_swstats_irq_stats();
-		
-		//these stats are calculated from the driver swstats on a per irq basis
-		uint64_t sys_irq_swstat_stats[] = {sys_swstats_irq_stats.diff_tx_nbytes , sys_swstats_irq_stats.diff_rx_nbytes , sys_swstats_irq_stats.diff_tx_npkts, sys_swstats_irq_stats.diff_rx_npkts};
-		//these stats are calculated on a per irq basis whenever tx / rx polling occurs
-		uint64_t poll_stats_irq[] = {poll_irq_stats.tx_nbytes, poll_irq_stats.rx_nbytes, poll_irq_stats.tx_npkts, poll_irq_stats.rx_npkts};			
-		
-		store_int64_asm(&(ile->Fields.tx_bytes_poll), poll_stats_irq[0]);
-		store_int64_asm(&(ile->Fields.rx_bytes_poll), poll_stats_irq[1]);
-		store_int64_asm(&(ile->Fields.tx_desc_poll), poll_stats_irq[2]);
-		store_int64_asm(&(ile->Fields.rx_desc_poll), poll_stats_irq[3]);
+		//log sys stats
+		log_sys_swstats_irq_stats(ile);
+		//set current stats to last recorded value
+		update_sys_swstats_irq_stats();
 
-		store_int64_asm(&(ile->Fields.tx_bytes_stats), sys_irq_swstat_stats[0]);
-		store_int64_asm(&(ile->Fields.rx_bytes_stats), sys_irq_swstat_stats[1]);
-		store_int64_asm(&(ile->Fields.tx_desc_stats), sys_irq_swstat_stats[2]);
-		store_int64_asm(&(ile->Fields.rx_desc_stats), sys_irq_swstat_stats[3]);
-
+		//OPTION 2:stats recorded at tx/rx polling, reset at end of log
+		//log poll_irq_stats
+		log_poll_irq_stats(ile);
 		//reset counters to null
 		reset_poll_irq_stats();
 		//update last to be curr after read
-		update_sys_swstats_irq_stats();
 
-    	il->itr_joules_last_tsc = now;
 	    //first get the joules
-		int power = get_power_xgene();
-		store_int64_asm(&(ile->Fields.pwr), power);
-        //store_int64_asm(&(ile->Fields.pwr), pwr.smpro_power);
-		//store_int64_asm(&(ile->Fields.curr), pwr.smpro_curr);
+		log_power_xgene(ile);
+
      	if(il->perf_started) 
 		{
-			uint64_t counters[3];
-			//c stats, cycles, LLCM, instructions
-			read_counters(counters);
-			store_int64_asm(&(ile->Fields.nllc_miss), counters[0]);
-		  	store_int64_asm(&(ile->Fields.ncycles), counters[1]);
-			store_int64_asm(&(ile->Fields.ninstructions), counters[2]);
+			//log cycles, LLCM, instructions from the PMU
+			log_counters(ile);
 			//now reset counters
 			reset_counters();
-
-			long long sleep_states[3];
-			get_idle_states_usage(sleep_states);
-			store_int64_asm(&(ile->Fields.c0), sleep_states[0]);
-			store_int64_asm(&(ile->Fields.c1), sleep_states[1]);
-			store_int64_asm(&(ile->Fields.c1), sleep_states[2]);
-
+			//log sleep state usagee
+			log_idle_states_usage(ile);
 		}
 		if(il->perf_started == 0) 
 		{
-		  	//initilaze performance counters
-		    //init ins, cycles, and ref_cyss and then start
+			//enable and reset PMU counters
 			enable_and_reset_regs();
-		    configure_pmu();
+		    //configure PMU to record LLCM, ncyc, ninstr
+			configure_pmu();
+			//sets helper struct to current val of sys software stats
 			init_sys_swstats_irq_stats();
+			//set as stats being started
 			il->perf_started = 1;
 		}		
-	//increment coutner to keep track of # of log entries
+	//increment counter to keep track of # of log entries
 	il->itr_cnt++;
     }
 }
