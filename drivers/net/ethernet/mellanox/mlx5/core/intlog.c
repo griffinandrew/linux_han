@@ -531,6 +531,7 @@ void remove_dir(void) {
 
 //trying to use this function to get once so dont need to constantly call on irq
 void set_ndev_and_epriv(void){
+	//possibly needs to be value of
 	ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0"); 
 	epriv = netdev_priv(ndev);
 }
@@ -621,9 +622,7 @@ void log_power_xgene(union LogEntry *ile) {
 	int xgene_ret = xgene_hwmon_get_cpu_pwr(ctx, &cpu_pwr);
 	//possibly some conditional logic for ret 
 
-	store_int64_asm(&(ile->Fields.pwr), cpu_pwr);
-	
-	return (int) cpu_pwr;
+	store_int64_asm(&(ile->Fields.pwr), (long long) cpu_pwr);
 }
 
 /*************************************************************************************************/
@@ -644,7 +643,6 @@ void record_log(){
 
 	//alternative way to get cpu #
     int cpu = smp_processor_id(); //might need to use cpu idle instead here 
-	// might be easier? but still need priv to get stats
 
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
@@ -656,7 +654,7 @@ void record_log(){
 		il->itr_joules_last_tsc = now;
 		store_int64_asm(&(ile->Fields.tsc), now);
 		
-		/* //alt way to get time and counts
+		/* NOTE: alt way to get time and counts
 		//might need semapores for safe access to timer
 		struct mlx5_timer timer = clock.timer;
 		struct timecounter time_count = timer.tc;
