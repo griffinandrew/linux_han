@@ -68,6 +68,9 @@
 #include "qos.h"
 #include "en/trap.h"
 
+//intlog
+#include "intlog.h"
+
 bool mlx5e_check_fragmented_striding_rq_cap(struct mlx5_core_dev *mdev, u8 page_shift,
 					    enum mlx5e_mpwrq_umr_mode umr_mode)
 {
@@ -5964,11 +5967,27 @@ int mlx5e_init(void)
 	ret = mlx5e_rep_init();
 	if (ret)
 		auxiliary_driver_unregister(&mlx5e_driver);
+
+	//intlog : nit memory for logs when opening
+	ret = alloc_log_space();
+	if (ret)
+		return ret;
+
+	//intlog : create proc/stats/core/N
+	ret = create_dir();
+	if (ret) 
+		return ret;
+
 	return ret;
 }
 
 void mlx5e_cleanup(void)
 {
+	//intlog : dealloc
+	dealloc_log_space();
+	//intlog : del log dir
+	remove_dir();
+
 	mlx5e_rep_cleanup();
 	auxiliary_driver_unregister(&mlx5e_driver);
 }

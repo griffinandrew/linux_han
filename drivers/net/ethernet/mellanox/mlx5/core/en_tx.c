@@ -43,6 +43,9 @@
 #include "en/ptp.h"
 #include <net/ipv6.h>
 
+//intlog
+#include "intlog.h"
+
 static void mlx5e_dma_unmap_wqe_err(struct mlx5e_txqsq *sq, u8 num_dma)
 {
 	int i;
@@ -884,6 +887,9 @@ bool mlx5e_poll_tx_cq(struct mlx5e_cq *cq, int napi_budget)
 		stats->wake++;
 	}
 
+	//intlog: add tx pkts and bytes
+	record_tx_poll_info(npkts, nbytes);
+	
 	return (i == MLX5E_TX_CQ_POLL_BUDGET);
 }
 

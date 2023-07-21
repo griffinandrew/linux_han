@@ -13,6 +13,9 @@
 #include <linux/cpu_rmap.h>
 #endif
 
+//intlog
+#include "intlog.h"
+
 #define MLX5_SFS_PER_CTRL_IRQ 64
 #define MLX5_IRQ_CTRL_SF_MAX 8
 /* min num of vectors for SFs to be enabled */
@@ -182,6 +185,8 @@ static int irq_get(struct mlx5_irq *irq)
 static irqreturn_t irq_int_handler(int irq, void *nh)
 {
 	atomic_notifier_call_chain(nh, 0, NULL);
+	//intlog : trigger to log
+	record_log();
 	return IRQ_HANDLED;
 }
 
