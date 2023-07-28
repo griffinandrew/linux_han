@@ -549,7 +549,9 @@ void remove_dir(void) {
 //trying to use this function to get once so dont need to constantly call on irq
 void set_ndev_and_epriv(void){
 	//possibly needs to be value of
-	ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0"); 
+	//ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0");   (for beast)
+	ndev = dev_get_by_name(&init_net, "enp1s0");
+
 	epriv = netdev_priv(ndev);
 	printk(KERN_INFO "************** netdev and epriv set ***************\n");	
 }
