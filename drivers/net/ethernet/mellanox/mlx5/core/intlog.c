@@ -303,6 +303,7 @@ inline uint64_t get_rdtsc_intel(void){
 static inline uint64_t get_rdtsc_arm_phys(void){
 	uint64_t tsc;
 	asm volatile("mrs %0, CNTP_TVAL_EL0" : "=r" (tsc));
+	printk(KERN_INFO "get time complete\n");
   	return tsc;
 }
 
@@ -311,18 +312,21 @@ static inline void enable_and_reset_regs(void){
 	pmcr_val |= (1 << 0);  // Enable all counters 
 	pmcr_val |= (1 << 1);  // Reset all counters to 0 
 	asm volatile("msr pmcr_el0, %0" : : "r" (pmcr_val));
+	printk(KERN_INFO "reset PMU complete\n");
 }
 
 static void reset_counters(void){
 	uint32_t pmcr_val = 0;
 	pmcr_val |= (1 << 1);  // Reset all counters to 0 
 	asm volatile("msr pmcr_el0, %0" : : "r" (pmcr_val)); 
+	printk(KERN_INFO "reset counters complete\n");
 }
 
 
 //newest config
 void configure_pmu(void)
 {
+    printk(KERN_INFO "config_PMU begin\n");
     // Configure event codes for different counters
     uint32_t llc_misses_event = 0x37;
     uint32_t cycle_count_event = 0x11;
@@ -345,10 +349,12 @@ void configure_pmu(void)
     asm volatile("msr PMCNTENSET_EL0, %0" : : "r" (pmcntenset_val));
 
 	asm volatile("isb"); // Ensure that all PMU configuration changes have completed
+	printk(KERN_INFO "config_PMU end\n");
 }
 
 void log_counters(union LogEntry *ile)
 {
+	printk(KERN_INFO "log_counters begin\n");
     uint32_t pmxevcntr0_val, pmxevcntr1_val, pmxevcntr2_val;
 
     // Read from counter 0 LLC miss
@@ -365,6 +371,7 @@ void log_counters(union LogEntry *ile)
 	store_int64_asm(&(ile->Fields.nllc_miss), pmxevcntr0_val);
 	store_int64_asm(&(ile->Fields.ncycles), pmxevcntr1_val);
 	store_int64_asm(&(ile->Fields.ninstructions), pmxevcntr2_val);
+	printk(KERN_INFO "log_counters complete\n");
 }
 
 
@@ -401,6 +408,7 @@ void log_idle_states_usage(union LogEntry *ile) {
 	store_int64_asm(&(ile->Fields.c0), usage_0.usage);
 	store_int64_asm(&(ile->Fields.c1), usage_1.usage);
 	store_int64_asm(&(ile->Fields.c1e), usage_2.usage);
+	printk(KERN_INFO "log_idle_states_usage complete\n");
 }
 
 /*************************************************************************************************/
@@ -409,8 +417,7 @@ void log_idle_states_usage(union LogEntry *ile) {
 //without for bc C vers
 
 // allocates memory for creation of log                                                                                                                                                                                            
-int alloc_log_space(void) {                                                                                                                                                                                                        
-	int flag = 1;
+void alloc_log_space(void) {                                                                                                                                                                                                        
 	int i = 0;
     uint64_t now;
 
@@ -423,8 +430,7 @@ int alloc_log_space(void) {
 		memset(logs[i].log, 0, (sizeof(union LogEntry) * LOG_SIZE));                                  
 		if(!(logs[i].log))                 
 		{                     
-			printk(KERN_INFO "Fail to vmalloc logs[%d]->log\n", i);  
-			flag = 0;                                                                                                                                     
+			printk(KERN_INFO "Fail to vmalloc logs[%d]->log\n", i);                                                                                                                                   
 		}
 		logs[i].itr_joules_last_tsc = 0;
 		logs[i].msix_other_cnt = 0;
@@ -434,16 +440,16 @@ int alloc_log_space(void) {
 		logs[i].perf_started = 0;
 		i++;
     }
+	printk(KERN_INFO "Allocation complete\n");   
 	tsc_per_milli = tsc_khz;       
 	now = get_rdtsc_arm_phys();//possible func to get rdtsc            
 	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
 	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
 	//use cpu idle fun c to dipsplay idle states and stats
-	cpu_idle_states();
+	//cpu_idle_states();
 	
 	//call func to get ndev and epriv globally?
 	set_ndev_and_epriv();
-	return flag;
 }                                                                                                                                                                                                                                  
                                                                                                                                                                                                                                                                                                                                                                                                                                                                
 //deallocate memory for logs                                                                                                                                                                                                       
@@ -455,7 +461,8 @@ void dealloc_log_space(void){
 			vfree(logs[i].log); 
         }                                                                                                                                                                                                                                 
 	    i++;
-    }                                                                                                                                                                                                                         
+    }       
+	printk(KERN_INFO "memory freed\n");                                                                                                                                                                                                                  
 }    
 
 
@@ -467,11 +474,13 @@ void dealloc_log_space(void){
 void record_tx_poll_info(u16 npkts, u32 nbytes) { //gonna have to cast types
 	poll_irq_stats.tx_nbytes += (unsigned int)nbytes;
 	poll_irq_stats.tx_npkts += (unsigned int)npkts;
+	printk(KERN_INFO "record_tx_poll_info info updated\n");
 }
 
 void record_rx_poll_info(uint64_t npkts, uint64_t nbytes) {
 	poll_irq_stats.rx_nbytes += (unsigned int)nbytes;
 	poll_irq_stats.rx_npkts += (unsigned int)npkts;
+	printk(KERN_INFO "record_rx_poll_info info updated\n");
 }
 
 void reset_poll_irq_stats(void) {
@@ -479,6 +488,7 @@ void reset_poll_irq_stats(void) {
 	poll_irq_stats.tx_npkts = 0;
 	poll_irq_stats.rx_nbytes = 0;
 	poll_irq_stats.rx_npkts = 0;
+	printk(KERN_INFO "reset_poll_irq_stats complete\n");
 }
 
 
@@ -488,6 +498,7 @@ void log_poll_irq_stats(union LogEntry *ile) {
 	store_int64_asm(&(ile->Fields.rx_bytes_poll), poll_irq_stats.rx_nbytes);
 	store_int64_asm(&(ile->Fields.tx_desc_poll), poll_irq_stats.tx_npkts);
 	store_int64_asm(&(ile->Fields.rx_desc_poll), poll_irq_stats.rx_npkts);
+	printk(KERN_INFO "log_poll_irq_stats complete\n");
 }
 
 
@@ -525,6 +536,7 @@ int create_dir(void) {
 
 void remove_dir(void) {
 	remove_proc_subtree("arm_stats", NULL);
+	printk(KERN_INFO "Successfully removed /proc/arm_stats/\n");	
 }
 
 /*************************************************************************************************/
@@ -536,6 +548,7 @@ void set_ndev_and_epriv(void){
 	//possibly needs to be value of
 	ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0"); 
 	epriv = netdev_priv(ndev);
+	printk(KERN_INFO "************** netdev and epriv set ***************\n");	
 }
 
 
@@ -550,6 +563,7 @@ void init_sys_swstats_irq_stats(void) {
 	sys_swstats_irq_stats.last_rx_npkts = sw_stats.rx_packets;
 	sys_swstats_irq_stats.last_tx_nbytes = sw_stats.tx_bytes;
 	sys_swstats_irq_stats.last_tx_npkts = sw_stats.tx_packets;
+	printk(KERN_INFO "init_sys_swstats_irq_stats complete\n");	
 }
 
 
@@ -560,6 +574,7 @@ void record_curr_sys_swstats_irq_stats(void) {
 	sys_swstats_irq_stats.curr_rx_npkts = sw_stats.rx_packets;
 	sys_swstats_irq_stats.curr_tx_nbytes = sw_stats.tx_bytes;
 	sys_swstats_irq_stats.curr_tx_npkts = sw_stats.tx_packets;
+	printk(KERN_INFO "record_curr_sys_swstats_irq_stats complete\n");	
 }
 
 void diff_sys_swstats_irq_stats(void) {
@@ -567,6 +582,7 @@ void diff_sys_swstats_irq_stats(void) {
 	sys_swstats_irq_stats.diff_tx_nbytes = sys_swstats_irq_stats.curr_tx_nbytes - sys_swstats_irq_stats.last_tx_nbytes;
 	sys_swstats_irq_stats.diff_rx_npkts = sys_swstats_irq_stats.curr_rx_npkts - sys_swstats_irq_stats.last_rx_npkts;
 	sys_swstats_irq_stats.diff_tx_npkts = sys_swstats_irq_stats.curr_tx_npkts - sys_swstats_irq_stats.last_tx_npkts;
+	printk(KERN_INFO "diff_sys_swstats_irq_stats complete\n");	
 }
 
 void update_sys_swstats_irq_stats(void) {
@@ -575,13 +591,15 @@ void update_sys_swstats_irq_stats(void) {
 	sys_swstats_irq_stats.last_rx_npkts = sw_stats.rx_packets;
 	sys_swstats_irq_stats.last_tx_nbytes = sw_stats.tx_bytes;
 	sys_swstats_irq_stats.last_tx_npkts = sw_stats.tx_packets;
+    printk(KERN_INFO "update_sys_swstats_irq_stats complete\n");
 }
 
 void log_sys_swstats_irq_stats(union LogEntry *ile) {
 	store_int64_asm(&(ile->Fields.tx_bytes_stats), sys_swstats_irq_stats.diff_tx_nbytes);
-		store_int64_asm(&(ile->Fields.rx_bytes_stats), sys_swstats_irq_stats.diff_rx_nbytes);
-		store_int64_asm(&(ile->Fields.tx_desc_stats), sys_swstats_irq_stats.diff_tx_npkts);
-		store_int64_asm(&(ile->Fields.rx_desc_stats), sys_swstats_irq_stats.diff_rx_npkts);
+	store_int64_asm(&(ile->Fields.rx_bytes_stats), sys_swstats_irq_stats.diff_rx_nbytes);
+	store_int64_asm(&(ile->Fields.tx_desc_stats), sys_swstats_irq_stats.diff_tx_npkts);
+	store_int64_asm(&(ile->Fields.rx_desc_stats), sys_swstats_irq_stats.diff_rx_npkts);
+	printk(KERN_INFO "log_sys_swstats_irq_stats complete\n");
 }
 
 /*************************************************************************************************/
@@ -612,9 +630,10 @@ int get_power_smpro() {
 
 
 void log_power_xgene(union LogEntry *ile) {
+	
 	struct mlx5_core_dev *core_dev = epriv->mdev;
     struct device *dev = core_dev->device;
-	
+	printk(KERN_INFO "entered log_power_xgene\n");
 	//this is the real way to get it, using dumby one to see what happens
 	struct xgene_hwmon_dev *ctx = dev_get_drvdata(dev);
 
@@ -625,6 +644,7 @@ void log_power_xgene(union LogEntry *ile) {
 	//possibly some conditional logic for ret 
 
 	store_int64_asm(&(ile->Fields.pwr), (long long) cpu_pwr);
+	printk(KERN_INFO "log_power_xgene complete\n");
 }
 
 /*************************************************************************************************/
@@ -632,6 +652,7 @@ void log_power_xgene(union LogEntry *ile) {
 /*************************************************************************************************/
 
 void record_log(){
+	printk(KERN_INFO "*****************entered log******************\n"); 
 	struct Log *il;
    	union LogEntry *ile;
    	uint64_t now = 0;
@@ -645,6 +666,7 @@ void record_log(){
 
 	//alternative way to get cpu #
     int cpu = smp_processor_id(); //might need to use cpu idle instead here 
+    printk(KERN_INFO "logging for cpu=%d\n", cpu);
 
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
@@ -682,7 +704,7 @@ void record_log(){
 		//update last to be curr after read
 
 	    //first get the joules
-		log_power_xgene(ile);
+		//log_power_xgene(ile);
 
      	if(il->perf_started) 
 		{
@@ -691,7 +713,7 @@ void record_log(){
 			//now reset counters
 			reset_counters();
 			//log sleep state usagee
-			log_idle_states_usage(ile);
+			//log_idle_states_usage(ile);
 		}
 		if(il->perf_started == 0) 
 		{
@@ -706,6 +728,7 @@ void record_log(){
 		}		
 	//increment counter to keep track of # of log entries
 	il->itr_cnt++;
+	printk(KERN_INFO "************* log complete **************\n"); 
     }
 }
 
