@@ -479,7 +479,7 @@ void dealloc_log_space(void){
 /*************************************************************************************************/
 
 
-void record_tx_poll_info(u16 npkts, u32 nbytes) { //gonna have to cast types
+void record_tx_poll_info(u16 npkts, u32 nbytes) {
 	poll_irq_stats.tx_nbytes += (unsigned int)nbytes;
 	poll_irq_stats.tx_npkts += (unsigned int)npkts;
 	printk(KERN_INFO "record_tx_poll_info info updated\n");
@@ -559,8 +559,10 @@ void remove_dir(void) {
 void set_ndev_and_epriv(void){
 	//possibly needs to be value of
 	//ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0");   (for beast)
-	ndev = dev_get_by_name(&init_net, "enp1s0");
 
+
+	//ndev = dev_get_by_name(&init_net, "enp1s0"); (wrong card)
+	ndev = dev_get_by_name(&init_net, "enp7s0np1");
 	epriv = netdev_priv(ndev);
 	printk(KERN_INFO "************** netdev and epriv set ***************\n");	
 }
