@@ -307,6 +307,12 @@ static inline uint64_t get_rdtsc_arm_phys(void){
   	return tsc;
 }
 
+static inline uint64_t get_rdtsc_arm_virt(void) {
+	uint64_t tsc;
+	asm volatile("mrs %0, CNTV_CTL_EL0" : "=r" (tsc));
+  	return tsc;
+}
+
 static inline void enable_and_reset_regs(void){
 	uint32_t pmcr_val = 0;
 	pmcr_val |= (1 << 0);  // Enable all counters 
@@ -444,7 +450,7 @@ int alloc_log_space(void) {
     }
 	printk(KERN_INFO "Allocation complete\n");   
 	tsc_per_milli = tsc_khz;       
-	now = get_rdtsc_arm_phys();//possible func to get rdtsc            
+	now = get_rdtsc_arm_virt();//possible func to get rdtsc            
 	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
 	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
 	//use cpu idle fun c to dipsplay idle states and stats
@@ -525,7 +531,7 @@ int create_dir(void) {
 		return -ENOMEM; //memory error , not enough size
 	}
 	while(i<NUM_CORES) {
-		char name [4]; //not sure why size 5
+		char name [4]; 
        		sprintf(name, "%ld", i);
  		if(!proc_create_data(name, 0444, stats_core_dir, &ct_file_ops_intlog, (void *)i)) {
 			printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/core/%ld\n", i);
@@ -679,7 +685,7 @@ void record_log(){
    	if(icnt < LOG_SIZE) 
 	{ 
      	ile = &il->log[icnt];
-     	now = get_rdtsc_arm_phys();
+     	now = get_rdtsc_arm_virt();
 		il->itr_joules_last_tsc = now;
 		store_int64_asm(&(ile->Fields.tsc), now);
 		
