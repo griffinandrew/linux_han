@@ -8,8 +8,6 @@
  *************************************************************************/
 #include <linux/cpuidle.h>
 
-//#include <asm/cpuidle.h>
-
 /*************************************************************************
  * intLog: to create procfs: /proc/ixgbe_stats/core/N //eventually
  *************************************************************************/
@@ -30,6 +28,7 @@
 #include <linux/timecounter.h>
 #include <linux/fs.h>
 #include <linux/device.h>
+#include <linux/threads.h>
 
 //HWMON / SMPRO INCLUDE
 #include <linux/hwmon.h>
@@ -315,7 +314,7 @@ static inline uint64_t get_rdtsc_arm_virt(void) {
 
 static inline void enable_and_reset_regs(void){
 	uint32_t pmcr_val = 0;
-	pmcr_val |= (1 << 0);  // Enable all counters 
+	//pmcr_val |= (1 << 0);  // Enable all counters 
 	pmcr_val |= (1 << 1);  // Reset all counters to 0 
 	asm volatile("msr pmcr_el0, %0" : : "r" (pmcr_val));
 	//printk(KERN_INFO "reset PMU complete\n");
@@ -678,6 +677,9 @@ void record_log(){
 	//alternative way to get cpu #
     int cpu = smp_processor_id(); //might need to use cpu idle instead here 
     printk(KERN_INFO "logging for cpu=%d\n", cpu);
+
+	int num_cpus = num_online_cpus(); 
+	printk(KERN_INFO "number of online cpus=%d\n", num_cpus);
 
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
