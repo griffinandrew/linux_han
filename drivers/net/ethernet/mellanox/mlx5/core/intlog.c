@@ -202,7 +202,7 @@ const struct file_operations ct_file_ops_intlog =
 
 static struct seq_operations my_seq_ops_intlog =
 {
- 	.next  = ct_next,
+ 	.next  = ct_next, //buggy according to kernel output
  	.show  = ct_show,
  	.start = ct_start,
  	.stop  = ct_stop,
@@ -689,7 +689,12 @@ void record_log(){
      	ile = &il->log[icnt];
      	now = get_rdtsc_arm_phys();
 		il->itr_joules_last_tsc = now;
+		printk(KERN_INFO "time=%d\n", (int) now);
 		store_int64_asm(&(ile->Fields.tsc), now);
+		ktime_t time = ktime_get();
+		unsigned long long int time_in_ns = ktime_to_ns(time);
+		printk(KERN_INFO "ktime from func=%d\n", (int) time_in_ns);
+
 		
 		/* NOTE: alt way to get time and counts
 		//might need semapores for safe access to timer
