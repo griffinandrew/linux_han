@@ -303,7 +303,7 @@ inline uint64_t get_rdtsc_intel(void){
 static inline uint64_t get_rdtsc_arm_phys(void){
 	uint64_t tsc;
 	asm volatile("mrs %0, CNTP_TVAL_EL0" : "=r" (tsc));
-	printk(KERN_INFO "get time complete\n");
+	//printk(KERN_INFO "get time complete\n");
   	return tsc;
 }
 
@@ -312,7 +312,7 @@ static inline void enable_and_reset_regs(void){
 	pmcr_val |= (1 << 0);  // Enable all counters 
 	pmcr_val |= (1 << 1);  // Reset all counters to 0 
 	asm volatile("msr pmcr_el0, %0" : : "r" (pmcr_val));
-	printk(KERN_INFO "reset PMU complete\n");
+	//printk(KERN_INFO "reset PMU complete\n");
 }
 
 static void reset_counters(void){
