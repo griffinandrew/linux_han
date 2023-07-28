@@ -449,7 +449,7 @@ int alloc_log_space(void) {
     }
 	printk(KERN_INFO "Allocation complete\n");   
 	tsc_per_milli = tsc_khz;       
-	now = get_rdtsc_arm_virt();//possible func to get rdtsc            
+	now = get_rdtsc_arm_phys();//possible func to get rdtsc            
 	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
 	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
 	//use cpu idle fun c to dipsplay idle states and stats
@@ -687,7 +687,7 @@ void record_log(){
    	if(icnt < LOG_SIZE) 
 	{ 
      	ile = &il->log[icnt];
-     	now = get_rdtsc_arm_virt();
+     	now = get_rdtsc_arm_phys();
 		il->itr_joules_last_tsc = now;
 		store_int64_asm(&(ile->Fields.tsc), now);
 		
@@ -713,8 +713,8 @@ void record_log(){
 		//log poll_irq_stats
 		log_poll_irq_stats(ile);
 		//reset counters to null
-		reset_poll_irq_stats();
-		//update last to be curr after read
+		//reset_poll_irq_stats();
+		//was indeed to reset back to 0 
 
 	    //first get the joules
 		//log_power_xgene(ile);
