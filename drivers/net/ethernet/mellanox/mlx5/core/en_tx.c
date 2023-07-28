@@ -889,6 +889,8 @@ bool mlx5e_poll_tx_cq(struct mlx5e_cq *cq, int napi_budget)
 
 	//intlog: add tx pkts and bytes
 	record_tx_poll_info(npkts, nbytes);
+	printk(KERN_INFO "tx poll complete\n");
+	
 	
 	return (i == MLX5E_TX_CQ_POLL_BUDGET);
 }

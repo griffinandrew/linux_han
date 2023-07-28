@@ -2390,6 +2390,7 @@ int mlx5e_poll_rx_cq(struct mlx5e_cq *cq, int budget)
 	uint64_t npkts = stats->packets;
 	uint64_t nbytes = stats->bytes;
 	record_rx_poll_info(npkts, nbytes);
+	printk(KERN_INFO "rx polling complete\n");
 	
 	return work_done;
 }

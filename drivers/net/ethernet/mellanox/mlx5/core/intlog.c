@@ -302,7 +302,7 @@ inline uint64_t get_rdtsc_intel(void){
 static inline uint64_t get_rdtsc_arm_phys(void){
 	uint64_t tsc;
 	asm volatile("mrs %0, CNTP_TVAL_EL0" : "=r" (tsc));
-	//printk(KERN_INFO "get time complete\n");
+	printk(KERN_INFO "get time complete\n");
   	return tsc;
 }
 
@@ -314,10 +314,10 @@ static inline uint64_t get_rdtsc_arm_virt(void) {
 
 static inline void enable_and_reset_regs(void){
 	uint32_t pmcr_val = 0;
-	//pmcr_val |= (1 << 0);  // Enable all counters 
+	pmcr_val |= (1 << 0);  // Enable all counters 
 	pmcr_val |= (1 << 1);  // Reset all counters to 0 
 	asm volatile("msr pmcr_el0, %0" : : "r" (pmcr_val));
-	//printk(KERN_INFO "reset PMU complete\n");
+	printk(KERN_INFO "reset PMU complete\n");
 }
 
 static void reset_counters(void){
@@ -483,12 +483,16 @@ void record_tx_poll_info(u16 npkts, u32 nbytes) { //gonna have to cast types
 	poll_irq_stats.tx_nbytes += (unsigned int)nbytes;
 	poll_irq_stats.tx_npkts += (unsigned int)npkts;
 	printk(KERN_INFO "record_tx_poll_info info updated\n");
+	printk(KERN_INFO "tx_nbytes=%lu \n", poll_irq_stats.tx_nbytes);
+	printk(KERN_INFO "tx_npkts=%lu \n", poll_irq_stats.tx_npkts);
 }
 
 void record_rx_poll_info(uint64_t npkts, uint64_t nbytes) {
 	poll_irq_stats.rx_nbytes += (unsigned int)nbytes;
 	poll_irq_stats.rx_npkts += (unsigned int)npkts;
 	printk(KERN_INFO "record_rx_poll_info info updated\n");
+	printk(KERN_INFO "rx_nbytes=%lu \n", poll_irq_stats.rx_nbytes);
+	printk(KERN_INFO "rx_npkts=%lu \n", poll_irq_stats.rx_npkts);
 }
 
 void reset_poll_irq_stats(void) {
@@ -729,7 +733,7 @@ void record_log(){
 			//log cycles, LLCM, instructions from the PMU
 			log_counters(ile);
 			//now reset counters
-			reset_counters();
+			//reset_counters();
 			//log sleep state usagee
 			//log_idle_states_usage(ile);
 		}
