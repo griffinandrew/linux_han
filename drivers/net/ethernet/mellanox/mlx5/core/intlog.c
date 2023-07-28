@@ -417,9 +417,10 @@ void log_idle_states_usage(union LogEntry *ile) {
 //without for bc C vers
 
 // allocates memory for creation of log                                                                                                                                                                                            
-void alloc_log_space(void) {                                                                                                                                                                                                        
+int alloc_log_space(void) {                                                                                                                                                                                                        
 	int i = 0;
     uint64_t now;
+	int flag = 0;
 
     //cpu_idle_states();    
     printk(KERN_INFO "****************** intLog init *******************");                                                                                                                                                    
@@ -430,7 +431,8 @@ void alloc_log_space(void) {
 		memset(logs[i].log, 0, (sizeof(union LogEntry) * LOG_SIZE));                                  
 		if(!(logs[i].log))                 
 		{                     
-			printk(KERN_INFO "Fail to vmalloc logs[%d]->log\n", i);                                                                                                                                   
+			printk(KERN_INFO "Fail to vmalloc logs[%d]->log\n", i); 
+			flag = 1;                                                                                                                                  
 		}
 		logs[i].itr_joules_last_tsc = 0;
 		logs[i].msix_other_cnt = 0;
@@ -450,6 +452,7 @@ void alloc_log_space(void) {
 	
 	//call func to get ndev and epriv globally?
 	set_ndev_and_epriv();
+	return flag;
 }                                                                                                                                                                                                                                  
                                                                                                                                                                                                                                                                                                                                                                                                                                                                
 //deallocate memory for logs                                                                                                                                                                                                       
@@ -511,7 +514,7 @@ void log_poll_irq_stats(union LogEntry *ile) {
 int create_dir(void) {
 	stats_dir = proc_mkdir("arm_stats", NULL);
 	unsigned long int i = 0;
-	int ret = 1;
+	int ret = 0;
 	if(!stats_dir) {
 		printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/\n");
 		return -ENOMEM;
@@ -526,7 +529,7 @@ int create_dir(void) {
        		sprintf(name, "%ld", i);
  		if(!proc_create_data(name, 0444, stats_core_dir, &ct_file_ops_intlog, (void *)i)) {
 			printk(KERN_ERR "Couldn't create base directory /proc/arm_stats/core/%ld\n", i);
-			ret = 0;
+			ret = 1;
 		}
 		i++;
 	}

@@ -131,7 +131,7 @@ void ct_stop(struct seq_file *s, void *v);
 int ct_open(struct inode *inode, struct file *file);
 */ //now all static
 // ************************ ALLOC FUNCS *******************************
-void alloc_log_space(void);
+int alloc_log_space(void);
 
 void dealloc_log_space(void);
 

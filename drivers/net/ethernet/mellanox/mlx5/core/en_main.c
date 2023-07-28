@@ -5970,7 +5970,7 @@ int mlx5e_init(void)
 
 	//intlog : nit memory for logs when opening
 	ret = alloc_log_space();
-	if (ret)
+	if (ret) 
 		return ret;
 
 	//intlog : create proc/stats/core/N
