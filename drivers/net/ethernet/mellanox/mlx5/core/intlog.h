@@ -84,23 +84,6 @@ struct poll_stats {
 } __attribute((packed)); //stay close to other structs for used for this purpose
 
 
-struct sys_swstats_stats {
-  uint64_t last_tx_nbytes;
-  uint64_t last_tx_npkts;
-  uint64_t last_rx_nbytes;
-  uint64_t last_rx_npkts;
-  uint64_t curr_tx_nbytes;
-  uint64_t curr_tx_npkts;
-  uint64_t curr_rx_nbytes;
-  uint64_t curr_rx_npkts;
-
-  uint64_t diff_tx_nbytes;
-  uint64_t diff_tx_npkts;
-  uint64_t diff_rx_nbytes;
-  uint64_t diff_rx_npkts;
-} __attribute((packed)); //stay close to other structs for used for this purpose
-
-
 struct smpro_pwr {
   uint64_t smpro_power; //declare var to hold power level
   uint64_t smpro_curr; //declare var to hold curr level
@@ -111,8 +94,6 @@ extern struct Log logs[NUM_CORES]; //for the 80 cores
 //extern unsigned int tsc_per_milli;
 
 extern struct poll_stats poll_irq_stats;
-extern struct sys_swstats_stats sys_swstats_irq_stats;
-
 
 //extern const struct file_operations ct_file_ops_intlog;
 //extern struct seq_operations my_seq_ops_intlog; //both declared in c file

@@ -70,21 +70,6 @@ struct proc_dir_entry *stats_dir;
 struct proc_dir_entry *stats_core_dir;
 ////////////////////////////////////////////////////////////////
 
-struct sys_swstats_stats sys_swstats_irq_stats = {
-	.last_tx_nbytes = 0,
-    .last_tx_npkts = 0,
-	.last_rx_npkts = 0,
-	.last_rx_nbytes = 0,
-	.curr_tx_nbytes = 0,
-    .curr_tx_npkts = 0,
-    .curr_rx_nbytes = 0,
-    .curr_rx_npkts = 0,
-    .diff_tx_nbytes = 0,
-    .diff_tx_npkts = 0,
-    .diff_rx_nbytes = 0,
-    .diff_rx_npkts = 0
-};
-
 struct poll_stats poll_irq_stats = {
 	.tx_nbytes = 0,
   	.tx_npkts = 0,
@@ -197,18 +182,6 @@ static void ct_stop(struct seq_file *s, void *v)
 /*************************** defining structs for reaping data ***********************************/
 /*************************************************************************************************/
 
-/*
-const struct file_operations ct_file_ops_intlog =
-{
-	.owner   = THIS_MODULE,
-	.open    = ct_open,
- 	.read    = seq_read,
- 	.llseek  = seq_lseek,
- 	.release = seq_release
-};
-*/
-
-
 static struct seq_operations my_seq_ops_intlog =
 {
  	.next  = ct_next, //buggy according to kernel output
@@ -302,10 +275,6 @@ inline uint64_t get_rdtsc_intel(void){
 }
 
 */
-
-
-//possibly arm implementation for retreiving tsc
-//this gets the physical timer val not the virtual
 
 // CNTP_TVAL_EL0 from CNTP_TVAL
 static inline uint64_t get_rdtsc_arm_phys(void){
