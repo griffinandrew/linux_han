@@ -29,6 +29,7 @@
 #include <linux/fs.h>
 #include <linux/device.h>
 #include <linux/threads.h>
+#include <asm/smp.h>
 
 //HWMON / SMPRO INCLUDE
 #include <linux/hwmon.h>
@@ -684,6 +685,9 @@ void record_log(){
     int cpu = smp_processor_id(); //might need to use cpu idle instead here 
     printk(KERN_INFO "logging for cpu=%d\n", cpu);
 
+	int cpu_n = get_cpu_id();
+	printk(KERN_INFO "new cpu func = %d\n", cpu_n);
+
 	int num_cpus = num_online_cpus(); 
 	printk(KERN_INFO "number of online cpus=%d\n", num_cpus);
 
@@ -695,11 +699,11 @@ void record_log(){
      	ile = &il->log[icnt];
      	now = get_rdtsc_arm_phys();
 		il->itr_joules_last_tsc = now;
-		printk(KERN_INFO "time=%d\n", (int) now);
+		printk(KERN_INFO "time=%llu\n", now);
 		store_int64_asm(&(ile->Fields.tsc), now);
 		ktime_t time = ktime_get();
 		unsigned long long int time_in_ns = ktime_to_ns(time);
-		printk(KERN_INFO "ktime from func=%d\n", (int) time_in_ns);
+		printk(KERN_INFO "ktime from func=%llu\n", time_in_ns);
 
 		
 		/* NOTE: alt way to get time and counts
