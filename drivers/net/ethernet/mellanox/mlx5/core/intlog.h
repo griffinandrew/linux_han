@@ -59,9 +59,9 @@ union LogEntry {
 #define CACHE_LINE_SIZE 64
 // pre-allocate size for number of LogEntry struct
 // Note: change this depending on your estimated log size entries, there are kernel limits for this too
-#define LOG_SIZE 1000000  
+#define LOG_SIZE 10000
 
-#define NUM_CORES 80
+#define NUM_CORES 10
 
 // a global data structure for each core
 struct Log {
