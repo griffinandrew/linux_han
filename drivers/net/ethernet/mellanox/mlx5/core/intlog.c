@@ -441,7 +441,7 @@ int alloc_log_space(void) {
 	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
 	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
 	//use cpu idle fun c to dipsplay idle states and stats
-	cpu_idle_states();
+	//cpu_idle_states();
 	
 	//call func to get ndev and epriv globally?
 	set_ndev_and_epriv();
@@ -553,7 +553,6 @@ void set_ndev_and_epriv(void){
 	//possibly needs to be value of
 	//ndev = dev_get_by_name(&init_net, "enP1p1s0f0np0");   (for beast)
 
-
 	ndev = dev_get_by_name(&init_net, "enp1s0"); //(wrong card)
 	//ndev = dev_get_by_name(&init_net, "enp7s0np1");
 	epriv = netdev_priv(ndev);
@@ -631,6 +630,9 @@ void record_log(){
 
 	int num_cpus = num_online_cpus(); 
 	printk(KERN_INFO "number of online cpus=%d\n", num_cpus);
+	
+	printk(KERN_INFO "idle states call\n");
+	cpu_idle_states();
 
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
