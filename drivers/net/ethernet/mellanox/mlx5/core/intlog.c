@@ -71,10 +71,19 @@ struct proc_dir_entry *stats_core_dir;
 ////////////////////////////////////////////////////////////////
 
 struct sys_swstats_stats sys_swstats_irq_stats = {
-    .last_tx_nbytes = 0,
+    
+	.last_tx_nbytes = 0,
     .last_tx_npkts = 0,
 	.last_rx_npkts = 0,
-	.last_rx_nbytes = 0
+	.last_rx_nbytes = 0,
+	.curr_tx_nbytes = 0,
+    .curr_tx_npkts = 0,
+    .curr_rx_nbytes = 0,
+    .curr_rx_npkts = 0,
+    .diff_tx_nbytes = 0,
+    .diff_tx_npkts = 0,
+    .diff_rx_nbytes = 0,
+    .diff_rx_npkts = 0
 };
 
 struct poll_stats poll_irq_stats = {
@@ -635,6 +644,11 @@ void log_sys_swstats_irq_stats(union LogEntry *ile) {
 	store_int64_asm(&(ile->Fields.tx_desc_stats), sys_swstats_irq_stats.diff_tx_npkts);
 	store_int64_asm(&(ile->Fields.rx_desc_stats), sys_swstats_irq_stats.diff_rx_npkts);
 	printk(KERN_INFO "log_sys_swstats_irq_stats complete\n");
+}
+
+
+void cumulative_sys_swstats_irq_stats(void) {
+
 }
 
 /*************************************************************************************************/
