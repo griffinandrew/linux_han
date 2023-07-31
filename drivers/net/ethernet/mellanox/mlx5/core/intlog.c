@@ -727,6 +727,7 @@ void record_log(){
 	for (int i = 0; i < NUM_CORES; ++i) {
         cpu = smp_processor_id();
         printk(KERN_INFO "CPU ID: %d\n", cpu);
+	}
     printk(KERN_INFO "logging for cpu=%d\n", cpu);
 
 	//int cpu_n = get_cpu_id();
