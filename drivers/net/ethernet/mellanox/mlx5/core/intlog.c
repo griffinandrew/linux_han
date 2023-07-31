@@ -71,7 +71,6 @@ struct proc_dir_entry *stats_core_dir;
 ////////////////////////////////////////////////////////////////
 
 struct sys_swstats_stats sys_swstats_irq_stats = {
-    
 	.last_tx_nbytes = 0,
     .last_tx_npkts = 0,
 	.last_rx_npkts = 0,
@@ -647,6 +646,23 @@ void log_sys_swstats_irq_stats(union LogEntry *ile) {
 
 
 void cumulative_sys_swstats_irq_stats(union LogEntry *ile) {
+	    // Check if ile is a null pointer
+    if (ile == NULL) {
+        printk(KERN_ERR "Error: Pointer ile is NULL.\n");
+        return;
+    }
+
+    // Assuming epriv is a pointer, check if it is a null pointer before dereferencing
+    if (epriv == NULL) {
+        printk(KERN_ERR "Error: Pointer epriv is NULL.\n");
+        return;
+    }
+
+	if (&(epriv->stats.sw) == NULL) {
+        printk(KERN_ERR "Error: Pointer mlx5e_sw_stats is NULL.\n");
+        return;
+    }
+
 	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
 	store_int64_asm(&(ile->Fields.tx_bytes_stats), sw_stats.tx_bytes);
 	store_int64_asm(&(ile->Fields.rx_bytes_stats), sw_stats.rx_bytes);
