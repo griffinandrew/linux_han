@@ -364,16 +364,24 @@ void log_counters(union LogEntry *ile)
 
 void cpu_idle_states(void) {
     //struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
-    struct cpuidle_device *dev = cpuidle_get_device();
-    struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);  //not sure if this is valid way to get this
-    
-	//check for null pointer
-	if (dev == NULL || drv == NULL) {
-        printk(KERN_ERR "Error: cpuidle_device or cpuidle_driver is a null pointer.\n");
+   struct cpuidle_device *dev = cpuidle_get_device();
+    struct cpuidle_driver *drv;
+
+    // Check if dev is a null pointer before accessing it
+    if (dev == NULL) {
+        printk(KERN_ERR "Error: cpuidle_device is a null pointer.\n");
         return;
     }
 
-    //print states
+    drv = cpuidle_get_cpu_driver(dev);
+
+    // Check if drv is a null pointer before accessing its members
+    if (drv == NULL) {
+        printk(KERN_ERR "Error: cpuidle_driver is a null pointer.\n");
+        return;
+    }
+
+	//print states
     int i;
     printk(KERN_INFO "cpuidle stats state_count=%d\n", drv->state_count);
     for(i=0;i<drv->state_count;i++) {
