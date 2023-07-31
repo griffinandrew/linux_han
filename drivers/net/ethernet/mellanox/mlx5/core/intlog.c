@@ -580,6 +580,7 @@ void cumulative_sys_swstats_irq_stats(union LogEntry *ile) {
         printk(KERN_ERR "Error: Pointer mlx5e_sw_stats is NULL.\n");
         return;
     }
+	
 	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
 	store_int64_asm(&(ile->Fields.tx_bytes_stats), sw_stats.tx_bytes);
 	store_int64_asm(&(ile->Fields.rx_bytes_stats), sw_stats.rx_bytes);
@@ -650,7 +651,7 @@ void record_log(){
 
 		//OPTION 1: stats: using sys sw_stats struct
 		//get current sys stats
-		cumulative_sys_swstats_irq_stats(ile);
+		//cumulative_sys_swstats_irq_stats(ile);
 
 		//OPTION 2:stats recorded at tx/rx polling, reset at end of log
 		//log poll_irq_stats
@@ -665,6 +666,17 @@ void record_log(){
 			log_counters(ile);
 			//log sleep state usagee
 			//log_idle_states_usage(ile);
+
+			//move stats here to potentially avoid null poitner error?
+
+			//OPTION 1: stats: using sys sw_stats struct
+			//get current sys stats
+			cumulative_sys_swstats_irq_stats(ile);
+
+			//OPTION 2:stats recorded at tx/rx polling, reset at end of log
+			//log poll_irq_stats
+			log_poll_irq_stats(ile);
+			
 		}
 		if(il->perf_started == 0) 
 		{
