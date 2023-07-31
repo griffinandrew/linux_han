@@ -62,7 +62,7 @@ union LogEntry {
 // Note: change this depending on your estimated log size entries, there are kernel limits for this too
 #define LOG_SIZE 10000
 
-#define NUM_CORES num_online_cpus(); 
+#define NUM_CORES num_online_cpus()
 
 // a global data structure for each core
 struct Log {
