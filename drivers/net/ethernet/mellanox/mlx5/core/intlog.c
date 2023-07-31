@@ -613,7 +613,6 @@ void record_curr_sys_swstats_irq_stats(void) {
 	printk(KERN_INFO "rx_npkts=%llu \n", sys_swstats_irq_stats.curr_rx_npkts);
 	printk(KERN_INFO "tx_nbytes=%llu \n", sys_swstats_irq_stats.curr_tx_nbytes);
 	printk(KERN_INFO "tx_npkts=%llu \n", sys_swstats_irq_stats.curr_tx_npkts);
-
 }
 
 void diff_sys_swstats_irq_stats(void) {
@@ -647,8 +646,17 @@ void log_sys_swstats_irq_stats(union LogEntry *ile) {
 }
 
 
-void cumulative_sys_swstats_irq_stats(void) {
-
+void cumulative_sys_swstats_irq_stats(union LogEntry *ile) {
+	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
+	store_int64_asm(&(ile->Fields.tx_bytes_stats), sw_stats.tx_bytes);
+	store_int64_asm(&(ile->Fields.rx_bytes_stats), sw_stats.rx_bytes);
+	store_int64_asm(&(ile->Fields.tx_desc_stats), sw_stats.tx_packets);
+	store_int64_asm(&(ile->Fields.rx_desc_stats), sw_stats.rx_packets);
+	printk(KERN_INFO "rx_nbytes=%llu \n", sw_stats.rx_bytes);
+	printk(KERN_INFO "rx_npkts=%llu \n", sw_stats.rx_packets);
+	printk(KERN_INFO "tx_nbytes=%llu \n", sw_stats.tx_bytes);
+	printk(KERN_INFO "tx_npkts=%llu \n", sw_stats.tx_packets);
+	printk(KERN_INFO "cumulative_sys_swstats_irq_stats complete\n");
 }
 
 /*************************************************************************************************/
@@ -753,13 +761,14 @@ void record_log(){
 
 		//OPTION 1: stats: using sys sw_stats struct
 		//get current sys stats
-		record_curr_sys_swstats_irq_stats();
+		cumulative_sys_swstats_irq_stats(ile);
+		//record_curr_sys_swstats_irq_stats();
 		//calcualte stast on per irq basus
-		diff_sys_swstats_irq_stats();
+		//diff_sys_swstats_irq_stats();
 		//log sys stats
-		log_sys_swstats_irq_stats(ile);
+		//log_sys_swstats_irq_stats(ile);
 		//set current stats to last recorded value
-		update_sys_swstats_irq_stats();
+		//update_sys_swstats_irq_stats();
 
 		//OPTION 2:stats recorded at tx/rx polling, reset at end of log
 		//log poll_irq_stats

@@ -15,6 +15,7 @@
 #include <linux/types.h>
 #include <linux/fs.h>
 #include <linux/version.h>
+#include <asm/smp.h>
 
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
@@ -61,7 +62,7 @@ union LogEntry {
 // Note: change this depending on your estimated log size entries, there are kernel limits for this too
 #define LOG_SIZE 10000
 
-#define NUM_CORES 20
+#define NUM_CORES num_online_cpus(); 
 
 // a global data structure for each core
 struct Log {
@@ -171,6 +172,8 @@ void init_sys_swstats_irq_stats(void);
 void update_sys_swstats_irq_stats(void);
 
 void log_sys_swstats_irq_stats(union LogEntry *ile);
+
+void cumulative_sys_swstats_irq_stats(union LogEntry *ile);
 
 void record_tx_poll_info(u16 npkts, u32 nbytes);
 
