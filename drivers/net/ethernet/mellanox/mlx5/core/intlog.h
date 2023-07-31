@@ -23,34 +23,34 @@
 
 // a single LogEntry is a single row of data in the entire log
 union LogEntry { 
-  long long data[20]; //there are 21 elements
+  uint64_t data[20]; //there are 21 elements
   struct {
-    long long tsc;             // rdtsc timestamp of when log entry was collected
-    long long ninstructions;   // number of instructions
-    long long ncycles;         // number of CPU cycles (will be impacted by CPU frequency changes, generally have it as a sanity check)
-    long long nref_cycles;     // number of CPU cycles (counts at fixed rate, not impacted by CPU frequency changes)
-    long long nllc_miss;       // number of last-level cache misses
-    long long pwr;          // current energy reading (Joules) from RAPL MSR register
-    long long curr;
+    uint64_t tsc;             // rdtsc timestamp of when log entry was collected
+    uint64_t ninstructions;   // number of instructions
+    uint64_t ncycles;         // number of CPU cycles (will be impacted by CPU frequency changes, generally have it as a sanity check)
+    uint64_t nref_cycles;     // number of CPU cycles (counts at fixed rate, not impacted by CPU frequency changes)
+    uint64_t nllc_miss;       // number of last-level cache misses
+    uint64_t pwr;          // current energy reading (Joules) from RAPL MSR register
+    uint64_t curr;
 
     //sleep states will be different across different processors
-    long long c0;              // C0 sleep state
-    long long c1;              // C1 sleep state
-    long long c1e;             // C1E sleep state
-    long long c3;              // C3 sleep state
-    long long c6;              // C6 sleep state
-    long long c7;              // C7 sleep state
+    uint64_t c0;              // C0 sleep state
+    uint64_t c1;              // C1 sleep state
+    uint64_t c1e;             // C1E sleep state
+    uint64_t c3;              // C3 sleep state
+    uint64_t c6;              // C6 sleep state
+    uint64_t c7;              // C7 sleep state
     
-    unsigned int rx_desc_poll;      // number of receive descriptors
-    unsigned int rx_bytes_poll;     // number of receive bytes
-    unsigned int tx_desc_poll;      // number of transmit descriptors
-    unsigned int tx_bytes_poll;     // number of transmit bytes
+    uint64_t rx_desc_poll;      // number of receive descriptors
+    uint64_t rx_bytes_poll;     // number of receive bytes
+    uint64_t tx_desc_poll;      // number of transmit descriptors
+    uint64_t tx_bytes_poll;     // number of transmit bytes
 
     //the idea is to use the the manual counter here to compare the discrepancy btw the 2
-    unsigned int rx_desc_stats;      // number of receive descriptors
-    unsigned int rx_bytes_stats;     // number of receive bytes
-    unsigned int tx_desc_stats;      // number of transmit descriptors
-    unsigned int tx_bytes_stats;     // number of transmit bytes
+    uint64_t rx_desc_stats;      // number of receive descriptors
+    uint64_t rx_bytes_stats;     // number of receive bytes
+    uint64_t tx_desc_stats;      // number of transmit descriptors
+    uint64_t tx_bytes_stats;     // number of transmit bytes
 
   } __attribute((packed)) Fields;
 } __attribute((packed));
@@ -76,33 +76,33 @@ struct Log {
 
 //this is my own counting handy work, could be garbage tho, relies on  rq stats for rx bytes / packs
 struct poll_stats {
-  unsigned int tx_nbytes;
-  unsigned int tx_npkts;
-  unsigned int rx_nbytes;
-  unsigned int rx_npkts;
+  uint64_t tx_nbytes;
+  uint64_t tx_npkts;
+  uint64_t rx_nbytes;
+  uint64_t rx_npkts;
 } __attribute((packed)); //stay close to other structs for used for this purpose
 
 
 struct sys_swstats_stats {
-  unsigned int last_tx_nbytes;
-  unsigned int last_tx_npkts;
-  unsigned int last_rx_nbytes;
-  unsigned int last_rx_npkts;
-  unsigned int curr_tx_nbytes;
-  unsigned int curr_tx_npkts;
-  unsigned int curr_rx_nbytes;
-  unsigned int curr_rx_npkts;
+  uint64_t last_tx_nbytes;
+  uint64_t last_tx_npkts;
+  uint64_t last_rx_nbytes;
+  uint64_t last_rx_npkts;
+  uint64_t curr_tx_nbytes;
+  uint64_t curr_tx_npkts;
+  uint64_t curr_rx_nbytes;
+  uint64_t curr_rx_npkts;
 
-  unsigned int diff_tx_nbytes;
-  unsigned int diff_tx_npkts;
-  unsigned int diff_rx_nbytes;
-  unsigned int diff_rx_npkts;
+  uint64_t diff_tx_nbytes;
+  uint64_t diff_tx_npkts;
+  uint64_t diff_rx_nbytes;
+  uint64_t diff_rx_npkts;
 } __attribute((packed)); //stay close to other structs for used for this purpose
 
 
 struct smpro_pwr {
-  int smpro_power; //declare var to hold power level
-  int smpro_curr; //declare var to hold curr level
+  uint64_t smpro_power; //declare var to hold power level
+  uint64_t smpro_curr; //declare var to hold curr level
 } __attribute((packed)); //stay close to other structs for used for this purpose
 
 extern struct smpro_pwr pwr;

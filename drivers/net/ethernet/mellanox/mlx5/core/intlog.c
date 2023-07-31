@@ -85,8 +85,8 @@ struct poll_stats poll_irq_stats = {
 };
 
 struct smpro_pwr pwr = {
-        .smpro_power = 0,
-        .smpro_curr = 0,
+    .smpro_power = 0,
+    .smpro_curr = 0,
 };
 
 /*********************************************************************************
@@ -153,25 +153,25 @@ static int ct_show(struct seq_file *s, void *v)
   	// write to entry in procfs
   	if(ile->Fields.tsc != 0) {
     	//seq_printf(s, "%u %u %u %u %u %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %u %u %u %u %llu\n", (unsigned int)*spos, ile->Fields.rx_desc, ile->Fields.rx_bytes, ile->Fields.tx_desc, ile->Fields.tx_bytes, ile->Fields.ninstructions, ile->Fields.ncycles, ile->Fields.nref_cycles, ile->Fields.nllc_miss, ile->Fields.c0, ile->Fields.c1, ile->Fields.c1e, ile->Fields.c3, ile->Fields.c6, ile->Fields.c7, ile->Fields.pwr, ile->Fields.curr,ile->Fields.tsc, ile->Fields.rx_bytes_stats, ile->Fields.tx_bytes_stats, ile->Fields.tx_desc_stats, ile->Fields.rx_desc_stats);
-		seq_printf(s, "%u %u %u %u %u %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %u %u %u %u\n", 
+		seq_printf(s, "%u %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu %llu\n", 
            (unsigned int)*spos, 
            ile->Fields.rx_desc_poll, 
            ile->Fields.rx_bytes_poll, 
            ile->Fields.tx_desc_poll, 
            ile->Fields.tx_bytes_poll, 
-           (unsigned long long int)ile->Fields.ninstructions, 
-           (unsigned long long int)ile->Fields.ncycles, 
-           (unsigned long long int)ile->Fields.nref_cycles, 
-           (unsigned long long int)ile->Fields.nllc_miss, 
-           (unsigned long long int)ile->Fields.c0, 
-           (unsigned long long int)ile->Fields.c1, 
-           (unsigned long long int)ile->Fields.c1e, 
-           (unsigned long long int)ile->Fields.c3, 
-           (unsigned long long int)ile->Fields.c6, 
-           (unsigned long long int)ile->Fields.c7, 
-           (unsigned long long int)ile->Fields.pwr, 
-           (unsigned long long int)ile->Fields.curr,
-           (unsigned long long int)ile->Fields.tsc, 
+           ile->Fields.ninstructions, 
+           ile->Fields.ncycles, 
+           ile->Fields.nref_cycles, 
+           ile->Fields.nllc_miss, 
+           ile->Fields.c0, 
+           ile->Fields.c1, 
+           ile->Fields.c1e, 
+           ile->Fields.c3, 
+           ile->Fields.c6, 
+           ile->Fields.c7, 
+           ile->Fields.pwr, 
+           ile->Fields.curr,
+           ile->Fields.tsc, 
            ile->Fields.rx_bytes_stats, 
            ile->Fields.tx_bytes_stats, 
            ile->Fields.tx_desc_stats, 
@@ -481,19 +481,19 @@ void dealloc_log_space(void){
 
 
 void record_tx_poll_info(u16 npkts, u32 nbytes) {
-	poll_irq_stats.tx_nbytes += (unsigned int)nbytes;
-	poll_irq_stats.tx_npkts += (unsigned int)npkts;
+	poll_irq_stats.tx_nbytes += (uint64_t)nbytes;
+	poll_irq_stats.tx_npkts += (uint64_t)npkts;
 	printk(KERN_INFO "record_tx_poll_info info updated\n");
-	printk(KERN_INFO "tx_nbytes=%lu \n", poll_irq_stats.tx_nbytes);
-	printk(KERN_INFO "tx_npkts=%lu \n", poll_irq_stats.tx_npkts);
+	printk(KERN_INFO "tx_nbytes=%llu \n", poll_irq_stats.tx_nbytes);
+	printk(KERN_INFO "tx_npkts=%llu \n", poll_irq_stats.tx_npkts);
 }
 
 void record_rx_poll_info(uint64_t npkts, uint64_t nbytes) {
-	poll_irq_stats.rx_nbytes += (unsigned int)nbytes;
-	poll_irq_stats.rx_npkts += (unsigned int)npkts;
+	poll_irq_stats.rx_nbytes += (uint64_t)nbytes;
+	poll_irq_stats.rx_npkts += (uint64_t)npkts;
 	printk(KERN_INFO "record_rx_poll_info info updated\n");
-	printk(KERN_INFO "rx_nbytes=%lu \n", poll_irq_stats.rx_nbytes);
-	printk(KERN_INFO "rx_npkts=%lu \n", poll_irq_stats.rx_npkts);
+	printk(KERN_INFO "rx_nbytes=%llu \n", poll_irq_stats.rx_nbytes);
+	printk(KERN_INFO "rx_npkts=%llu \n", poll_irq_stats.rx_npkts);
 }
 
 void reset_poll_irq_stats(void) {
@@ -702,7 +702,7 @@ void record_log(){
 		printk(KERN_INFO "time=%llu\n", now);
 		store_int64_asm(&(ile->Fields.tsc), now);
 		ktime_t time = ktime_get();
-		unsigned long long int time_in_ns = ktime_to_ns(time);
+		uint64_t time_in_ns = ktime_to_ns(time);
 		printk(KERN_INFO "ktime from func=%llu\n", time_in_ns);
 
 		
