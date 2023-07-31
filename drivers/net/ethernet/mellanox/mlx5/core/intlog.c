@@ -395,12 +395,12 @@ void log_counters(union LogEntry *ile)
 
 void cpu_idle_states(void) {
     //struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
-    //struct cpuidle_device *dev = cpuidle_get_device();
-    //struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);  //not sure if this is valid way to get this
-    struct cpuidle_device *dev;
-    struct cpuidle_driver *drv;
-    dev = this_cpu_read(cpuidle_devices);
-    drv = cpuidle_get_cpu_driver(dev);
+    struct cpuidle_device *dev = cpuidle_get_device();
+    struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);  //not sure if this is valid way to get this
+    //struct cpuidle_device *dev;
+    //struct cpuidle_driver *drv;
+    //dev = this_cpu_read(cpuidle_devices);
+    //drv = cpuidle_get_cpu_driver(dev);
     
     //print states
     int i;
@@ -462,7 +462,7 @@ int alloc_log_space(void) {
 	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
 	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
 	//use cpu idle fun c to dipsplay idle states and stats
-	//cpu_idle_states();
+	cpu_idle_states();
 	
 	//call func to get ndev and epriv globally?
 	set_ndev_and_epriv();
@@ -720,7 +720,7 @@ void log_power_xgene(union LogEntry *ile) {
 	//possibly some conditional logic for ret 
 
 	store_int64_asm(&(ile->Fields.pwr), (uint64_t) cpu_pwr);
-	printk(KERN_INFO "log_power_xgene complete\n");
+	printk(KERN_INFO "log_power_xgene completepwr =%llu\n", cpu_pwr);
 }
 
 /*************************************************************************************************/
@@ -770,7 +770,6 @@ void record_log(){
 		ktime_t time = ktime_get();
 		uint64_t time_in_ns = ktime_to_ns(time);
 		printk(KERN_INFO "ktime from func=%llu\n", time_in_ns);
-		set_ndev_and_epriv();
 		
 		/* NOTE: alt way to get time and counts
 		//might need semapores for safe access to timer
