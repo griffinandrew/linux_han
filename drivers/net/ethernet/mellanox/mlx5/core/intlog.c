@@ -722,7 +722,11 @@ void record_log(){
 	//struct mlx5_clock clock = core_dev->clock;
 
 	//alternative way to get cpu #
-    int cpu = smp_processor_id(); //might need to use cpu idle instead here 
+    //int cpu = smp_processor_id(); //might need to use cpu idle instead here 
+	int cpu;
+	for (int i = 0; i < NUM_CORES; ++i) {
+        cpu = smp_processor_id();
+        printk(KERN_INFO "CPU ID: %d\n", cpu);
     printk(KERN_INFO "logging for cpu=%d\n", cpu);
 
 	//int cpu_n = get_cpu_id();
