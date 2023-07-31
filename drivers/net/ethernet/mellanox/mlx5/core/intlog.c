@@ -660,7 +660,7 @@ void log_power_xgene(union LogEntry *ile) {
 	int xgene_ret = xgene_hwmon_get_cpu_pwr(ctx, &cpu_pwr);
 	//possibly some conditional logic for ret 
 
-	store_int64_asm(&(ile->Fields.pwr), (long long) cpu_pwr);
+	store_int64_asm(&(ile->Fields.pwr), (uint64_t) cpu_pwr);
 	printk(KERN_INFO "log_power_xgene complete\n");
 }
 
@@ -685,8 +685,13 @@ void record_log(){
     int cpu = smp_processor_id(); //might need to use cpu idle instead here 
     printk(KERN_INFO "logging for cpu=%d\n", cpu);
 
-	int cpu_n = get_cpu_id();
-	printk(KERN_INFO "new cpu func = %d\n", cpu_n);
+	//int cpu_n = get_cpu_id();
+	//printk(KERN_INFO "new cpu func = %d\n", cpu_n);
+
+	struct cpuidle_device *idle_dev = __this_cpu_read(cpuidle_devices);
+	unsigned int cpu_dev = idle_dev->cpu;
+
+	printk(KERN_INFO "cpu from struct = %u\n", cpu_dev);
 
 	int num_cpus = num_online_cpus(); 
 	printk(KERN_INFO "number of online cpus=%d\n", num_cpus);
