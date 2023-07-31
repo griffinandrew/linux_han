@@ -693,8 +693,6 @@ void record_log(){
 			enable_and_reset_regs();
 		    //configure PMU to record LLCM, ncyc, ninstr
 			configure_pmu();
-			//sets helper struct to current val of sys software stats
-			init_sys_swstats_irq_stats();
 			//set as stats being started
 			il->perf_started = 1;
 		}		
