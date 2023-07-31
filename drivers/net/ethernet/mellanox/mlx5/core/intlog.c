@@ -303,7 +303,7 @@ inline uint64_t get_rdtsc_intel(void){
 static inline uint64_t get_rdtsc_arm_phys(void){
 	uint64_t tsc;
 	asm volatile("mrs %0, CNTP_TVAL_EL0" : "=r" (tsc));
-	printk(KERN_INFO "get time complete\n");
+	printk(KERN_INFO "get time complete =%llu\n", tsc);
   	return tsc;
 }
 
@@ -361,23 +361,23 @@ void configure_pmu(void)
 void log_counters(union LogEntry *ile)
 {
 	printk(KERN_INFO "log_counters begin\n");
-    uint32_t pmxevcntr0_val, pmxevcntr1_val, pmxevcntr2_val;
+    uint32_t n_llcm, n_cycs, n_instr;
 
     // Read from counter 0 LLC miss
-    asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (pmxevcntr0_val));
+    asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (n_llcm));
     
     // Read from counter 1 cycle count
     asm volatile("msr PMSELR_EL0, %0" : : "r" (1));
-    asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (pmxevcntr1_val));
+    asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (n_cycs));
     
     // Read from counter 2, instruction count
     asm volatile("msr PMSELR_EL0, %0" : : "r" (2));
-    asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (pmxevcntr2_val));
+    asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (n_instr));
 
-	store_int64_asm(&(ile->Fields.nllc_miss), pmxevcntr0_val);
-	store_int64_asm(&(ile->Fields.ncycles), pmxevcntr1_val);
-	store_int64_asm(&(ile->Fields.ninstructions), pmxevcntr2_val);
-	printk(KERN_INFO "log_counters complete\n");
+	store_int64_asm(&(ile->Fields.nllc_miss), n_llcm);
+	store_int64_asm(&(ile->Fields.ncycles), n_cycs);
+	store_int64_asm(&(ile->Fields.ninstructions), n_instr);
+	printk(KERN_INFO "log_counters complete llcm=%lu ncyc=%lu ninstr=%lu\n", n_llcm, n_cycs, n_instr);
 }
 
 
@@ -512,6 +512,10 @@ void log_poll_irq_stats(union LogEntry *ile) {
 	store_int64_asm(&(ile->Fields.tx_desc_poll), poll_irq_stats.tx_npkts);
 	store_int64_asm(&(ile->Fields.rx_desc_poll), poll_irq_stats.rx_npkts);
 	printk(KERN_INFO "log_poll_irq_stats complete\n");
+	printk(KERN_INFO "rx_nbytes=%llu \n", poll_irq_stats.rx_nbytes);
+	printk(KERN_INFO "rx_npkts=%llu \n", poll_irq_stats.rx_npkts);
+	printk(KERN_INFO "tx_nbytes=%llu \n", poll_irq_stats.tx_nbytes);
+	printk(KERN_INFO "tx_npkts=%llu \n", poll_irq_stats.tx_npkts);
 }
 
 
@@ -580,7 +584,11 @@ void init_sys_swstats_irq_stats(void) {
 	sys_swstats_irq_stats.last_rx_npkts = sw_stats.rx_packets;
 	sys_swstats_irq_stats.last_tx_nbytes = sw_stats.tx_bytes;
 	sys_swstats_irq_stats.last_tx_npkts = sw_stats.tx_packets;
-	printk(KERN_INFO "init_sys_swstats_irq_stats complete\n");	
+	printk(KERN_INFO "init_sys_swstats_irq_stats complete\n");
+	printk(KERN_INFO "rx_nbytes=%llu \n", sys_swstats_irq_stats.last_rx_nbytes);
+	printk(KERN_INFO "rx_npkts=%llu \n", sys_swstats_irq_stats.last_rx_npkts);
+	printk(KERN_INFO "tx_nbytes=%llu \n", sys_swstats_irq_stats.last_tx_nbytes);
+	printk(KERN_INFO "tx_npkts=%llu \n", sys_swstats_irq_stats.last_tx_npkts);	
 }
 
 
@@ -591,7 +599,12 @@ void record_curr_sys_swstats_irq_stats(void) {
 	sys_swstats_irq_stats.curr_rx_npkts = sw_stats.rx_packets;
 	sys_swstats_irq_stats.curr_tx_nbytes = sw_stats.tx_bytes;
 	sys_swstats_irq_stats.curr_tx_npkts = sw_stats.tx_packets;
-	printk(KERN_INFO "record_curr_sys_swstats_irq_stats complete\n");	
+	printk(KERN_INFO "record_curr_sys_swstats_irq_stats complete\n");
+	printk(KERN_INFO "rx_nbytes=%llu \n", sys_swstats_irq_stats.curr_rx_nbytes);
+	printk(KERN_INFO "rx_npkts=%llu \n", sys_swstats_irq_stats.curr_rx_npkts);
+	printk(KERN_INFO "tx_nbytes=%llu \n", sys_swstats_irq_stats.curr_tx_nbytes);
+	printk(KERN_INFO "tx_npkts=%llu \n", sys_swstats_irq_stats.curr_tx_npkts);
+
 }
 
 void diff_sys_swstats_irq_stats(void) {
@@ -600,6 +613,11 @@ void diff_sys_swstats_irq_stats(void) {
 	sys_swstats_irq_stats.diff_rx_npkts = sys_swstats_irq_stats.curr_rx_npkts - sys_swstats_irq_stats.last_rx_npkts;
 	sys_swstats_irq_stats.diff_tx_npkts = sys_swstats_irq_stats.curr_tx_npkts - sys_swstats_irq_stats.last_tx_npkts;
 	printk(KERN_INFO "diff_sys_swstats_irq_stats complete\n");	
+	printk(KERN_INFO "record_curr_sys_swstats_irq_stats complete\n");
+	printk(KERN_INFO "rx_nbytes=%llu \n", sys_swstats_irq_stats.diff_rx_nbytes);
+	printk(KERN_INFO "rx_npkts=%llu \n", sys_swstats_irq_stats.diff_rx_npkts);
+	printk(KERN_INFO "tx_nbytes=%llu \n", sys_swstats_irq_stats.diff_tx_nbytes);
+	printk(KERN_INFO "tx_npkts=%llu \n", sys_swstats_irq_stats.diff_tx_npkts);
 }
 
 void update_sys_swstats_irq_stats(void) {
