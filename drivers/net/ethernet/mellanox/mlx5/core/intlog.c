@@ -515,6 +515,7 @@ void reset_poll_irq_stats(void) {
 
 //not sure if this should be a piinter or not, know that I want to pass address to
 void log_poll_irq_stats(union LogEntry *ile) {
+	printk(KERN_INFO "log_poll_irq_stats begin\n");
 	store_int64_asm(&(ile->Fields.tx_bytes_poll), poll_irq_stats.tx_nbytes);
 	store_int64_asm(&(ile->Fields.rx_bytes_poll), poll_irq_stats.rx_nbytes);
 	store_int64_asm(&(ile->Fields.tx_desc_poll), poll_irq_stats.tx_npkts);
@@ -646,7 +647,9 @@ void log_sys_swstats_irq_stats(union LogEntry *ile) {
 
 
 void cumulative_sys_swstats_irq_stats(union LogEntry *ile) {
-	    // Check if ile is a null pointer
+
+	printk(KERN_INFO "cumulative_sys_swstats_irq_stats begin\n");
+
     if (ile == NULL) {
         printk(KERN_ERR "Error: Pointer ile is NULL.\n");
         return;
@@ -739,11 +742,8 @@ void record_log(){
 
 	//alternative way to get cpu #
     //int cpu = smp_processor_id(); //might need to use cpu idle instead here 
-	int cpu;
-	for (int i = 0; i < NUM_CORES; ++i) {
-        cpu = smp_processor_id();
-        printk(KERN_INFO "CPU ID: %d\n", cpu);
-	}
+	int cpu = smp_processor_id();
+
     printk(KERN_INFO "logging for cpu=%d\n", cpu);
 
 	//int cpu_n = get_cpu_id();
@@ -770,7 +770,7 @@ void record_log(){
 		ktime_t time = ktime_get();
 		uint64_t time_in_ns = ktime_to_ns(time);
 		printk(KERN_INFO "ktime from func=%llu\n", time_in_ns);
-
+		set_ndev_and_epriv();
 		
 		/* NOTE: alt way to get time and counts
 		//might need semapores for safe access to timer
@@ -793,6 +793,7 @@ void record_log(){
 
 		//OPTION 2:stats recorded at tx/rx polling, reset at end of log
 		//log poll_irq_stats
+
 		log_poll_irq_stats(ile);
 		//reset counters to null
 		//reset_poll_irq_stats();
