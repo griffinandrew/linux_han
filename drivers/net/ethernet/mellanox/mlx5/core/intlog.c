@@ -398,6 +398,12 @@ void cpu_idle_states(void) {
     struct cpuidle_device *dev = cpuidle_get_device();
     struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);  //not sure if this is valid way to get this
     
+	//check for null pointer
+	if (dev == NULL || drv == NULL) {
+        printk(KERN_ERR "Error: cpuidle_device or cpuidle_driver is a null pointer.\n");
+        return;
+    }
+
     //print states
     int i;
     printk(KERN_INFO "cpuidle stats state_count=%d\n", drv->state_count);
