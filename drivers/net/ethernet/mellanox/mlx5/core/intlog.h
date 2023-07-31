@@ -163,13 +163,6 @@ void set_ndev_and_epriv(void); //perhaps could be static?
 void log_power_xgene(union LogEntry *ile);
 
 //*********************** tracking of stats per irq ********************
-void diff_sys_stats(void);
-
-void record_curr_sys_swstats_irq_stats(void);
-
-void init_sys_swstats_irq_stats(void);
-
-void update_sys_swstats_irq_stats(void);
 
 void log_sys_swstats_irq_stats(union LogEntry *ile);
 

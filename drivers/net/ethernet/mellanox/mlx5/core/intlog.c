@@ -397,10 +397,6 @@ void cpu_idle_states(void) {
     //struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
     struct cpuidle_device *dev = cpuidle_get_device();
     struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);  //not sure if this is valid way to get this
-    //struct cpuidle_device *dev;
-    //struct cpuidle_driver *drv;
-    //dev = this_cpu_read(cpuidle_devices);
-    //drv = cpuidle_get_cpu_driver(dev);
     
     //print states
     int i;
@@ -587,85 +583,21 @@ void set_ndev_and_epriv(void){
 /********************************* use sys stats *************************************************/
 /*************************************************************************************************/
 
-void init_sys_swstats_irq_stats(void) {
-	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
-	sys_swstats_irq_stats.last_rx_nbytes = sw_stats.rx_bytes;
-	sys_swstats_irq_stats.last_rx_npkts = sw_stats.rx_packets;
-	sys_swstats_irq_stats.last_tx_nbytes = sw_stats.tx_bytes;
-	sys_swstats_irq_stats.last_tx_npkts = sw_stats.tx_packets;
-	printk(KERN_INFO "init_sys_swstats_irq_stats complete\n");
-	printk(KERN_INFO "rx_nbytes=%llu \n", sys_swstats_irq_stats.last_rx_nbytes);
-	printk(KERN_INFO "rx_npkts=%llu \n", sys_swstats_irq_stats.last_rx_npkts);
-	printk(KERN_INFO "tx_nbytes=%llu \n", sys_swstats_irq_stats.last_tx_nbytes);
-	printk(KERN_INFO "tx_npkts=%llu \n", sys_swstats_irq_stats.last_tx_npkts);	
-}
-
-
-//in second thouight is not really needed
-void record_curr_sys_swstats_irq_stats(void) {
-	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
-	sys_swstats_irq_stats.curr_rx_nbytes = sw_stats.rx_bytes;
-	sys_swstats_irq_stats.curr_rx_npkts = sw_stats.rx_packets;
-	sys_swstats_irq_stats.curr_tx_nbytes = sw_stats.tx_bytes;
-	sys_swstats_irq_stats.curr_tx_npkts = sw_stats.tx_packets;
-	printk(KERN_INFO "record_curr_sys_swstats_irq_stats complete\n");
-	printk(KERN_INFO "rx_nbytes=%llu \n", sys_swstats_irq_stats.curr_rx_nbytes);
-	printk(KERN_INFO "rx_npkts=%llu \n", sys_swstats_irq_stats.curr_rx_npkts);
-	printk(KERN_INFO "tx_nbytes=%llu \n", sys_swstats_irq_stats.curr_tx_nbytes);
-	printk(KERN_INFO "tx_npkts=%llu \n", sys_swstats_irq_stats.curr_tx_npkts);
-}
-
-void diff_sys_swstats_irq_stats(void) {
-	sys_swstats_irq_stats.diff_rx_nbytes = sys_swstats_irq_stats.curr_rx_nbytes - sys_swstats_irq_stats.last_rx_nbytes;
-	sys_swstats_irq_stats.diff_tx_nbytes = sys_swstats_irq_stats.curr_tx_nbytes - sys_swstats_irq_stats.last_tx_nbytes;
-	sys_swstats_irq_stats.diff_rx_npkts = sys_swstats_irq_stats.curr_rx_npkts - sys_swstats_irq_stats.last_rx_npkts;
-	sys_swstats_irq_stats.diff_tx_npkts = sys_swstats_irq_stats.curr_tx_npkts - sys_swstats_irq_stats.last_tx_npkts;
-	printk(KERN_INFO "diff_sys_swstats_irq_stats complete\n");	
-	printk(KERN_INFO "record_curr_sys_swstats_irq_stats complete\n");
-	printk(KERN_INFO "rx_nbytes=%llu \n", sys_swstats_irq_stats.diff_rx_nbytes);
-	printk(KERN_INFO "rx_npkts=%llu \n", sys_swstats_irq_stats.diff_rx_npkts);
-	printk(KERN_INFO "tx_nbytes=%llu \n", sys_swstats_irq_stats.diff_tx_nbytes);
-	printk(KERN_INFO "tx_npkts=%llu \n", sys_swstats_irq_stats.diff_tx_npkts);
-}
-
-void update_sys_swstats_irq_stats(void) {
-	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
-	sys_swstats_irq_stats.last_rx_nbytes = sw_stats.rx_bytes;
-	sys_swstats_irq_stats.last_rx_npkts = sw_stats.rx_packets;
-	sys_swstats_irq_stats.last_tx_nbytes = sw_stats.tx_bytes;
-	sys_swstats_irq_stats.last_tx_npkts = sw_stats.tx_packets;
-    printk(KERN_INFO "update_sys_swstats_irq_stats complete\n");
-}
-
-void log_sys_swstats_irq_stats(union LogEntry *ile) {
-	store_int64_asm(&(ile->Fields.tx_bytes_stats), sys_swstats_irq_stats.diff_tx_nbytes);
-	store_int64_asm(&(ile->Fields.rx_bytes_stats), sys_swstats_irq_stats.diff_rx_nbytes);
-	store_int64_asm(&(ile->Fields.tx_desc_stats), sys_swstats_irq_stats.diff_tx_npkts);
-	store_int64_asm(&(ile->Fields.rx_desc_stats), sys_swstats_irq_stats.diff_rx_npkts);
-	printk(KERN_INFO "log_sys_swstats_irq_stats complete\n");
-}
-
-
 void cumulative_sys_swstats_irq_stats(union LogEntry *ile) {
-
 	printk(KERN_INFO "cumulative_sys_swstats_irq_stats begin\n");
-
-    if (ile == NULL) {
+    
+	if (ile == NULL) {
         printk(KERN_ERR "Error: Pointer ile is NULL.\n");
         return;
     }
-
-    // Assuming epriv is a pointer, check if it is a null pointer before dereferencing
     if (epriv == NULL) {
         printk(KERN_ERR "Error: Pointer epriv is NULL.\n");
         return;
     }
-
 	if (&(epriv->stats.sw) == NULL) {
         printk(KERN_ERR "Error: Pointer mlx5e_sw_stats is NULL.\n");
         return;
     }
-
 	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
 	store_int64_asm(&(ile->Fields.tx_bytes_stats), sw_stats.tx_bytes);
 	store_int64_asm(&(ile->Fields.rx_bytes_stats), sw_stats.rx_bytes);
@@ -679,31 +611,8 @@ void cumulative_sys_swstats_irq_stats(union LogEntry *ile) {
 }
 
 /*************************************************************************************************/
-/*********************************SMPRO + XGENE **************************************************/
+/**************************************** XGENE **************************************************/
 /*************************************************************************************************/
-
-
-/*
-int get_power_smpro() {
-	struct mlx5_core_dev *core_dev = epriv->mdev;
-	struct device *dev = core_dev->device;
-	struct mlx5e_channels chs = epriv->channels;
-	struct mlx5e_channel **ch = chs.c;
-	int ix = (*ch)->ix; //channel number passed to read energy
-	long val_pwr;
-	u32 attr = hwmon_power_input;
-
-	int result = smpro_read_power(dev, attr, ix, &val_pwr);
-	if(result == 0){
-		return val_pwr;
-	}
-	else{
-		return -1; 
-	}
-}
-
-*/
-
 
 void log_power_xgene(union LogEntry *ile) {
 	
@@ -733,26 +642,9 @@ void record_log(){
    	union LogEntry *ile;
    	uint64_t now = 0;
    	int icnt = 0;
-	//struct cpuidle_device *cpu_idle_dev = __this_cpu_read(cpuidle_devices);
-	//struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
 
-	//struct mlx5_core_dev *core_dev = epriv->mdev;
-	//use clock to record time and cycs
-	//struct mlx5_clock clock = core_dev->clock;
-
-	//alternative way to get cpu #
-    //int cpu = smp_processor_id(); //might need to use cpu idle instead here 
 	int cpu = smp_processor_id();
-
     printk(KERN_INFO "logging for cpu=%d\n", cpu);
-
-	//int cpu_n = get_cpu_id();
-	//printk(KERN_INFO "new cpu func = %d\n", cpu_n);
-
-	//struct cpuidle_device *idle_dev = __this_cpu_read(cpuidle_devices);
-	//unsigned int cpu_dev = idle_dev->cpu;
-
-	//printk(KERN_INFO "cpu from struct = %u\n", cpu_dev);
 
 	int num_cpus = num_online_cpus(); 
 	printk(KERN_INFO "number of online cpus=%d\n", num_cpus);
@@ -770,43 +662,22 @@ void record_log(){
 		ktime_t time = ktime_get();
 		uint64_t time_in_ns = ktime_to_ns(time);
 		printk(KERN_INFO "ktime from func=%llu\n", time_in_ns);
-		
-		/* NOTE: alt way to get time and counts
-		//might need semapores for safe access to timer
-		struct mlx5_timer timer = clock.timer;
-		struct timecounter time_count = timer.tc;
-		uint64_t nsec = time_count.nsec;
-		uint64_t nm_cycs = time_count.cycle_last; //these r abs tho 
-		*/	
 
 		//OPTION 1: stats: using sys sw_stats struct
 		//get current sys stats
 		cumulative_sys_swstats_irq_stats(ile);
-		//record_curr_sys_swstats_irq_stats();
-		//calcualte stast on per irq basus
-		//diff_sys_swstats_irq_stats();
-		//log sys stats
-		//log_sys_swstats_irq_stats(ile);
-		//set current stats to last recorded value
-		//update_sys_swstats_irq_stats();
 
 		//OPTION 2:stats recorded at tx/rx polling, reset at end of log
 		//log poll_irq_stats
-
 		log_poll_irq_stats(ile);
-		//reset counters to null
-		//reset_poll_irq_stats();
-		//was indeed to reset back to 0 
 
-	    //first get the joules
+	    //Function call to get the xgene power
 		//log_power_xgene(ile);
 
      	if(il->perf_started) 
 		{
 			//log cycles, LLCM, instructions from the PMU
 			log_counters(ile);
-			//now reset counters
-			//reset_counters();
 			//log sleep state usagee
 			//log_idle_states_usage(ile);
 		}
