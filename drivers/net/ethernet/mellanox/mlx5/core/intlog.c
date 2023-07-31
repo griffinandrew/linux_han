@@ -655,7 +655,7 @@ void record_log(){
 
 		//OPTION 2:stats recorded at tx/rx polling, reset at end of log
 		//log poll_irq_stats
-		log_poll_irq_stats(ile);
+		//log_poll_irq_stats(ile);
 
 	    //Function call to get the xgene power
 		//log_power_xgene(ile);
