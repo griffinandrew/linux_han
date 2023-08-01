@@ -590,7 +590,7 @@ void cumulative_sys_swstats_irq_stats(union LogEntry *ile) {
 	struct mlx5e_sw_stats sw_stats = epriv->stats.sw;
 
 	if (sw_stats.tx_bytes == NULL || sw_stats.rx_bytes == NULL || sw_stats.tx_packets == NULL || sw_stats.rx_packets == NULL) {
-    	printf("sw_stats is a null pointer.\n");
+    	printk(KERN_ERR "Error: Pointer mlx5e_sw_stats is NULL.\n");
 		return;
 	}
 
