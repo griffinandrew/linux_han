@@ -5968,15 +5968,24 @@ int mlx5e_init(void)
 	if (ret)
 		auxiliary_driver_unregister(&mlx5e_driver);
 
+	printk(KERN_ERR "**************intlog alloc begin*********\n");
 	//intlog : nit memory for logs when opening
 	ret = alloc_log_space();
 	if (ret) 
 		return ret;
+	printk(KERN_ERR "**************intlog alloc end*********\n");
 
+	printk(KERN_ERR "**************intlog create dir begin*********\n");
 	//intlog : create proc/stats/core/N
 	ret = create_dir();
 	if (ret) 
 		return ret;
+
+	alert_intlog_complete();
+	
+
+
+	printk(KERN_ERR "**************intlog create dir end*********\n");
 
 	return ret;
 }

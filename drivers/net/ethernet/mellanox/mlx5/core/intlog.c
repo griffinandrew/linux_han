@@ -43,9 +43,10 @@
  *************************************************************************/
 //not sure why was extern 
 unsigned int tsc_khz;
-//= 0; //this should not be init to 0
 
-//not sure why this had to be included as extern
+//intlog : flag for indicating alloc / dir complete so dont run into null pointer when logging
+unsigned int done_flag = 1;
+
 
 /*************************************************************************
  * intLog: see definitions in intlog.h
@@ -544,6 +545,11 @@ void remove_dir(void) {
 	printk(KERN_INFO "Successfully removed /proc/arm_stats/\n");	
 }
 
+
+void alert_intlog_complete(void){
+	done_flag = 0;
+}
+
 /*************************************************************************************************/
 /*************** assign vals to global pointers for global access ********************************/
 /*************************************************************************************************/
@@ -592,6 +598,9 @@ void cumulative_sys_swstats_irq_stats(union LogEntry *ile) {
 	printk(KERN_INFO "tx_npkts=%llu \n", sw_stats.tx_packets);
 	printk(KERN_INFO "cumulative_sys_swstats_irq_stats complete\n");
 }
+
+
+
 
 /*************************************************************************************************/
 /**************************************** XGENE **************************************************/
@@ -660,7 +669,7 @@ void record_log(){
 	    //Function call to get the xgene power
 		//log_power_xgene(ile);
 
-     	if(il->perf_started) 
+     	if(il->perf_started && done_flag == 0) 
 		{
 			//log cycles, LLCM, instructions from the PMU
 			log_counters(ile);
