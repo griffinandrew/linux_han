@@ -710,7 +710,7 @@ void record_log(){
 
 			//OPTION 1: stats: using sys sw_stats struct
 			//get current sys stats
-			cumulative_sys_swstats_irq_stats(ile);
+			//cumulative_sys_swstats_irq_stats(ile);
 
 			//OPTION 2:stats recorded at tx/rx polling, reset at end of log
 			//log poll_irq_stats
