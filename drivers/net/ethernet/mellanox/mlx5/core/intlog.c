@@ -237,6 +237,10 @@ static inline void write_nti64_intel(void *p, const uint64_t v) {
 }
 
 static inline void store_int64_asm(void *p, const uint64_t v) {
+	if (p == NULL) {
+       	printk(KERN_INFO "p is null in store\n");
+        return;	
+    }
 	asm volatile("str %x[v], [%x[p]]"
         : [p] "+r" (p)
         : [v] "r" (v)
@@ -340,6 +344,10 @@ void log_counters(union LogEntry *ile)
 {
 	printk(KERN_INFO "log_counters begin\n");
     uint32_t n_llcm, n_cycs, n_instr;
+	if (ile == NULL) {
+        printk(KERN_INFO "ile null\n");
+		return;
+    }
 
     // Read from counter 0 LLC miss
     asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (n_llcm));
@@ -393,6 +401,11 @@ void cpu_idle_states(void) {
 
 
 void log_idle_states_usage(union LogEntry *ile) {
+	printk(KERN_INFO "log_idle_states_usage begin\n");
+	if (ile == NULL) {
+        printk(KERN_INFO "ile null\n");
+		return;
+    }
 	struct cpuidle_device *idle_dev = __this_cpu_read(cpuidle_devices);
 	//need to include all the sleep states
 	struct cpuidle_state_usage usage_0 = idle_dev->states_usage[0];
@@ -496,6 +509,10 @@ void reset_poll_irq_stats(void) {
 //not sure if this should be a piinter or not, know that I want to pass address to
 void log_poll_irq_stats(union LogEntry *ile) {
 	printk(KERN_INFO "log_poll_irq_stats begin\n");
+	if (ile == NULL) {
+        printk(KERN_INFO "ile null\n");
+		return;
+    }
 	store_int64_asm(&(ile->Fields.tx_bytes_poll), poll_irq_stats.tx_nbytes);
 	store_int64_asm(&(ile->Fields.rx_bytes_poll), poll_irq_stats.rx_nbytes);
 	store_int64_asm(&(ile->Fields.tx_desc_poll), poll_irq_stats.tx_npkts);
@@ -614,6 +631,12 @@ void cumulative_sys_swstats_irq_stats(union LogEntry *ile) {
 /*************************************************************************************************/
 
 void log_power_xgene(union LogEntry *ile) {
+	printk(KERN_INFO "log_power_xgene begin\n");
+ 
+	if (ile == NULL) {
+        printk(KERN_INFO "ile null\n");
+		return;
+    }
 	
 	struct mlx5_core_dev *core_dev = epriv->mdev;
     struct device *dev = core_dev->device;
@@ -628,7 +651,7 @@ void log_power_xgene(union LogEntry *ile) {
 	//possibly some conditional logic for ret 
 
 	store_int64_asm(&(ile->Fields.pwr), (uint64_t) cpu_pwr);
-	printk(KERN_INFO "log_power_xgene completepwr =%llu\n", cpu_pwr);
+	printk(KERN_INFO "log_power_xgene complete pwr =%llu\n", cpu_pwr);
 }
 
 /*************************************************************************************************/
