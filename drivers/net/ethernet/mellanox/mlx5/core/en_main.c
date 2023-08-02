@@ -5980,12 +5980,16 @@ int mlx5e_init(void)
 	ret = create_dir();
 	if (ret) 
 		return ret;
+	printk(KERN_ERR "**************intlog create dir end*********\n");
+
+	//enable and reset PMU counters
+	printk(KERN_ERR "**************enable PMU*********\n");
+	enable_and_reset_regs();
+	//configure PMU to record LLCM, ncyc, ninstr
+	printk(KERN_ERR "**************config PMU*********\n");
+	configure_pmu();
 
 	alert_intlog_complete();
-	
-
-
-	printk(KERN_ERR "**************intlog create dir end*********\n");
 
 	return ret;
 }

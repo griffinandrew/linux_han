@@ -699,7 +699,7 @@ void record_log(){
 	    //Function call to get the xgene power
 		//log_power_xgene(ile);
 
-     	if(il->perf_started && done_flag == 0) 
+     	if(done_flag == 0) 
 		{
 			//log cycles, LLCM, instructions from the PMU
 			log_counters(ile);
@@ -716,16 +716,7 @@ void record_log(){
 			//log poll_irq_stats
 			log_poll_irq_stats(ile);
 			
-		}
-		if(il->perf_started == 0) 
-		{
-			//enable and reset PMU counters
-			enable_and_reset_regs();
-		    //configure PMU to record LLCM, ncyc, ninstr
-			configure_pmu();
-			//set as stats being started
-			il->perf_started = 1;
-		}		
+		}	
 	//increment counter to keep track of # of log entries
 	il->itr_cnt++;
 	printk(KERN_INFO "************* log complete **************\n"); 
