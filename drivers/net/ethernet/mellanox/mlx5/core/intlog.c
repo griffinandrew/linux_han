@@ -21,7 +21,7 @@
 #include <linux/types.h>
 #include <linux/cpumask.h>
 #include <linux/smp.h>
-//#include "en_stats.h"
+#include "en_stats.h"
 #include "mlx5_core.h"
 #include "en.h"
 #include "intlog.h"
@@ -31,21 +31,17 @@
 #include <linux/threads.h>
 #include <asm/smp.h>
 
-//HWMON / SMPRO INCLUDE
+//HWMON / SMPRO / XGENE INCLUDE
 #include <linux/hwmon.h>
 
 #include "../../../../../hwmon/xgene-hwmon.h"
 
-//#include "drivers/hwmon/xgene-hwmon.h"
 
 /*************************************************************************
  * intLog: access tsc tick rate
  *************************************************************************/
 //not sure why was extern 
 unsigned int tsc_khz;
-
-//intlog : flag for indicating alloc / dir complete so dont run into null pointer when logging
-unsigned int done_flag = 1;
 
 
 /*************************************************************************
@@ -294,7 +290,7 @@ static inline uint64_t get_rdtsc_arm_phys(void){
   	return tsc;
 }
 
-
+//enables and inits PMU counters to 0
 static inline void enable_and_reset_regs(void){
 	uint32_t pmcr_val = 0;
 	pmcr_val |= (1 << 0);  // Enable all counters 
@@ -303,6 +299,7 @@ static inline void enable_and_reset_regs(void){
 	printk(KERN_INFO "reset PMU complete\n");
 }
 
+//intention was to reset counters on every irq but not working as expected, currently just shows cumaltive counters
 static void reset_counters(void){
 	uint32_t pmcr_val = 0;
 	pmcr_val |= (1 << 1);  // Reset all counters to 0 
@@ -564,10 +561,6 @@ void remove_dir(void) {
 }
 
 
-void alert_intlog_complete(void){
-	done_flag = 0;
-}
-
 /*************************************************************************************************/
 /*************** assign vals to global pointers for global access ********************************/
 /*************************************************************************************************/
@@ -659,7 +652,7 @@ void log_power_xgene(union LogEntry *ile) {
 /********************************* RECORD LOG ***************************************************/
 /*************************************************************************************************/
 
-//log function which handles all necessarly function calls to lig 
+//log function which handles all necessarly function calls to log 
 void record_log(){
 	printk(KERN_INFO "*****************entered log******************\n"); 
 	struct Log *il;
@@ -667,18 +660,18 @@ void record_log(){
    	uint64_t now = 0;
    	int icnt = 0;
 
+	//get cpu
 	int cpu = smp_processor_id();
     printk(KERN_INFO "logging for cpu=%d\n", cpu);
-
-	int num_cpus = num_online_cpus(); 
-	printk(KERN_INFO "number of online cpus=%d\n", num_cpus);
 	
 	printk(KERN_INFO "idle states call\n");
-	cpu_idle_states();
+	cpu_idle_states(); //currently in vm returning null pointer (think vm issue?)
 
+	//get log for certain cpu
    	il = &logs[cpu];
    	icnt = il->itr_cnt;
 
+	//as long as there is still space in log can write to it
    	if(icnt < LOG_SIZE) 
 	{ 
      	ile = &il->log[icnt];
@@ -686,42 +679,32 @@ void record_log(){
 		il->itr_joules_last_tsc = now;
 		printk(KERN_INFO "time=%llu\n", now);
 		store_int64_asm(&(ile->Fields.tsc), now);
-		ktime_t time = ktime_get();
-		uint64_t time_in_ns = ktime_to_ns(time);
-		printk(KERN_INFO "ktime from func=%llu\n", time_in_ns);
-
-		//OPTION 1: stats: using sys sw_stats struct
-		//get current sys stats
-		//cumulative_sys_swstats_irq_stats(ile);
-
-		//OPTION 2:stats recorded at tx/rx polling, reset at end of log
-		//log poll_irq_stats
-		//log_poll_irq_stats(ile);
 
 	    //Function call to get the xgene power
 		//log_power_xgene(ile);
 
-     	if(done_flag == 0) 
-		{
-			//log cycles, LLCM, instructions from the PMU
-			log_counters(ile);
+		//log cycles, LLCM, instructions from the PMU
+		log_counters(ile);
 			
-			//log sleep state usagee
-			//log_idle_states_usage(ile);
+		//log sleep state usagee
+		//log_idle_states_usage(ile);
 
-			//OPTION 1: stats: using sys sw_stats struct
-			//get current sys stats
-			//cumulative_sys_swstats_irq_stats(ile);
+		//OPTION 1: stats: using sys sw_stats struct
+		//get current sys stats
+		cumulative_sys_swstats_irq_stats(ile);
 
-			//OPTION 2:stats recorded at tx/rx polling, reset at end of log
-			//log poll_irq_stats
-			log_poll_irq_stats(ile);
+		//OPTION 2:stats recorded at tx/rx polling, reset at end of log
+		//log poll_irq_stats
+		log_poll_irq_stats(ile);
 			
-		}	
+		//Function call to get the xgene power
+		//log_power_xgene(ile);
+			
+		
+    }
 	//increment counter to keep track of # of log entries
 	il->itr_cnt++;
 	printk(KERN_INFO "************* log complete **************\n"); 
-    }
 }
 
 

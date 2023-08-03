@@ -109,8 +109,6 @@ void remove_dir(void);
 
 int create_dir(void);
 
-void alert_intlog_complete(void);
-
 // *********************** IDLE STATES ***********************
 void cpu_idle_states(void);
 
