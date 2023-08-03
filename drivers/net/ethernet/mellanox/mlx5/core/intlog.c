@@ -703,10 +703,9 @@ void record_log(){
 		{
 			//log cycles, LLCM, instructions from the PMU
 			log_counters(ile);
+			
 			//log sleep state usagee
 			//log_idle_states_usage(ile);
-
-			//move stats here to potentially avoid null poitner error?
 
 			//OPTION 1: stats: using sys sw_stats struct
 			//get current sys stats
