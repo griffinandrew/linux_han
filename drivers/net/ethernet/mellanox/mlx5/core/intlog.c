@@ -78,6 +78,7 @@ struct poll_stats poll_irq_stats = {
   	.rx_npkts = 0
 };
 
+//
 struct smpro_pwr pwr = {
     .smpro_power = 0,
     .smpro_curr = 0,
@@ -229,6 +230,7 @@ static const struct file_operations ct_file_ops_intlog = {
 /*************************************************************************************************/ 
 
 //p is pointer to mem location to written, v value to overwrite mem location
+////function used to store int64 in intel
 static inline void write_nti64_intel(void *p, const uint64_t v) {
 	asm volatile("movnti %0, (%1)\n\t"
 		: 
@@ -236,6 +238,7 @@ static inline void write_nti64_intel(void *p, const uint64_t v) {
 		: "memory");
 }
 
+//function used to store int64 in arm 
 static inline void store_int64_asm(void *p, const uint64_t v) {
 	if (p == NULL) {
        	printk(KERN_INFO "p is null in store\n");
@@ -247,6 +250,7 @@ static inline void store_int64_asm(void *p, const uint64_t v) {
         : "memory");
 }
 
+//function used to store int32 in arm 
 static inline void store_int32_asm(void *p, const uint32_t v) {
     asm volatile("str %w[v], [%x[p]]"
         : [p] "+r" (p)
@@ -254,6 +258,7 @@ static inline void store_int32_asm(void *p, const uint32_t v) {
         : "memory");
 }
 
+//function used to store int32 in intel
 static inline void write_nti32_intel(void *p, const uint32_t v) {
 	asm volatile("movnti %0, (%1)\n\t"
 		:
@@ -281,7 +286,7 @@ inline uint64_t get_rdtsc_intel(void){
 
 */
 
-// CNTP_TVAL_EL0 from CNTP_TVAL
+//function used to get current time val for arm (phys
 static inline uint64_t get_rdtsc_arm_phys(void){
 	uint64_t tsc;
 	asm volatile("mrs %0, CNTP_TVAL_EL0" : "=r" (tsc));
@@ -289,11 +294,6 @@ static inline uint64_t get_rdtsc_arm_phys(void){
   	return tsc;
 }
 
-static inline uint64_t get_rdtsc_arm_virt(void) {
-	uint64_t tsc;
-	asm volatile("mrs %0, CNTV_CTL_EL0" : "=r" (tsc));
-  	return tsc;
-}
 
 static inline void enable_and_reset_regs(void){
 	uint32_t pmcr_val = 0;
@@ -320,15 +320,15 @@ void configure_pmu(void)
     uint32_t cycle_count_event = 0x11;
     uint32_t instruction_count_event = 0x08;
     
-    // Configure counter 0
+    // Configure counter 0 to recordd LLCM
     asm volatile("msr PMSELR_EL0, %0" : : "r" (0));
     asm volatile("msr PMXEVTYPER_EL0, %0" : : "r" (llc_misses_event));
     
-    // Configure counter 1
+    // Configure counter 1 to record ncycs
     asm volatile("msr PMSELR_EL0, %0" : : "r" (1));
     asm volatile("msr PMXEVTYPER_EL0, %0" : : "r" (cycle_count_event));
     
-    // Configure counter 2
+    // Configure counter 2 to record ninstr
     asm volatile("msr PMSELR_EL0, %0" : : "r" (2));
     asm volatile("msr PMXEVTYPER_EL0, %0" : : "r" (instruction_count_event));
     
@@ -344,6 +344,7 @@ void log_counters(union LogEntry *ile)
 {
 	printk(KERN_INFO "log_counters begin\n");
     uint32_t n_llcm, n_cycs, n_instr;
+	//check if ile is null
 	if (ile == NULL) {
         printk(KERN_INFO "ile null\n");
 		return;
@@ -360,6 +361,7 @@ void log_counters(union LogEntry *ile)
     asm volatile("msr PMSELR_EL0, %0" : : "r" (2));
     asm volatile("mrs %0, PMXEVCNTR_EL0" : "=r" (n_instr));
 
+	//write all counters to logs
 	store_int64_asm(&(ile->Fields.nllc_miss), n_llcm);
 	store_int64_asm(&(ile->Fields.ncycles), n_cycs);
 	store_int64_asm(&(ile->Fields.ninstructions), n_instr);
@@ -373,7 +375,8 @@ void log_counters(union LogEntry *ile)
 
 void cpu_idle_states(void) {
     //struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
-   struct cpuidle_device *dev = cpuidle_get_device();
+    //get dev used to get idle states
+	struct cpuidle_device *dev = cpuidle_get_device();
     struct cpuidle_driver *drv;
 
     // Check if dev is a null pointer before accessing it
@@ -381,7 +384,7 @@ void cpu_idle_states(void) {
         printk(KERN_ERR "Error: cpuidle_device is a null pointer.\n");
         return;
     }
-
+	//get driver used to get idle states
     drv = cpuidle_get_cpu_driver(dev);
 
     // Check if drv is a null pointer before accessing its members
@@ -429,7 +432,6 @@ int alloc_log_space(void) {
     uint64_t now;
 	int flag = 0;
 
-    //cpu_idle_states();    
     printk(KERN_INFO "****************** intLog init *******************");                                                                                                                                                    
     while (i < NUM_CORES)   
     {                
@@ -454,10 +456,11 @@ int alloc_log_space(void) {
 	now = get_rdtsc_arm_phys();//possible func to get rdtsc            
 	store_int64_asm(&(logs[0].log[0].Fields.tsc), now);   
 	printk(KERN_INFO "tsc_khz = %u now = %llu tsc = %llu \n", tsc_khz, now, logs[0].log[0].Fields.tsc);
-	//use cpu idle fun c to dipsplay idle states and stats
+	
+	//use cpu idle fun c to display idle states and stats (atm returning null pointer)
 	//cpu_idle_states();
 	
-	//call func to get ndev and epriv globally?
+	//call func to get ndev and epriv globally
 	set_ndev_and_epriv();
 	return flag;
 }                                                                                                                                                                                                                                  
@@ -474,7 +477,6 @@ void dealloc_log_space(void){
     }       
 	printk(KERN_INFO "memory freed\n");                                                                                                                                                                                                                  
 }    
-
 
 /*************************************************************************************************/
 /********************************* RECORD per irq info *******************************************/
@@ -506,7 +508,6 @@ void reset_poll_irq_stats(void) {
 }
 
 
-//not sure if this should be a piinter or not, know that I want to pass address to
 void log_poll_irq_stats(union LogEntry *ile) {
 	printk(KERN_INFO "log_poll_irq_stats begin\n");
 	if (ile == NULL) {
@@ -658,6 +659,7 @@ void log_power_xgene(union LogEntry *ile) {
 /********************************* RECORD LOG ***************************************************/
 /*************************************************************************************************/
 
+//log function which handles all necessarly function calls to lig 
 void record_log(){
 	printk(KERN_INFO "*****************entered log******************\n"); 
 	struct Log *il;

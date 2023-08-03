@@ -91,27 +91,11 @@ struct smpro_pwr {
 
 extern struct smpro_pwr pwr;
 extern struct Log logs[NUM_CORES]; //for the 80 cores
-//extern unsigned int tsc_per_milli;
 
 extern struct poll_stats poll_irq_stats;
 
-//extern const struct file_operations ct_file_ops_intlog;
-//extern struct seq_operations my_seq_ops_intlog; //both declared in c file
-
 //function declarations
 
-// ************************ SEQ FILE OPS *********************************
-/*
-void *ct_start(struct seq_file *s, loff_t *pos);
-
-void *ct_next(struct seq_file *s, void *v, loff_t *pos);
-
-int ct_show(struct seq_file *s, void *v);
-
-void ct_stop(struct seq_file *s, void *v);
-
-int ct_open(struct inode *inode, struct file *file);
-*/ //now all static
 // ************************ ALLOC FUNCS *******************************
 int alloc_log_space(void);
 
